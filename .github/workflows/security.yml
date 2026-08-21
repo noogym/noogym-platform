@@ -1,4 +1,4 @@
-name: Noogym ERP Security Check
+name: Noogym Platform Security Check
 
 on:
   pull_request:
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       run_zap:
-        description: "Run optional OWASP ZAP baseline against the web-admin Docker image"
+        description: "Run optional OWASP ZAP baseline against the ERP Docker image"
         required: false
         default: false
         type: boolean
@@ -26,10 +26,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: "20"
-  PNPM_VERSION: "9.0.0"
-  WEB_IMAGE: noogym-web-admin:security
-  WEB_DOCKERFILE: apps/web-admin/Dockerfile
+  NODE_VERSION: "22"
+  PNPM_VERSION: "11.0.9"
+  ERP_IMAGE: noogym-erp:security
+  ERP_DOCKERFILE: apps/erp/Dockerfile
+  CYPRESS_INSTALL_BINARY: "0"
 
 jobs:
   dependency-audit:
@@ -165,7 +166,7 @@ jobs:
         run: pnpm typecheck
 
       - name: API unit tests
-        run: pnpm --filter @noogym/noogym-erp-api test
+        run: pnpm --filter @noogym/api test
 
       - name: Build applications
         run: pnpm build
@@ -182,13 +183,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build web-admin Docker image
-        run: docker build -f "${WEB_DOCKERFILE}" -t "${WEB_IMAGE}" .
+      - name: Build ERP Docker image
+        run: docker build -f "${ERP_DOCKERFILE}" -t "${ERP_IMAGE}" .
 
       - name: Run Trivy image scan
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ${{ env.WEB_IMAGE }}
+          image-ref: ${{ env.ERP_IMAGE }}
           vuln-type: os,library
           severity: HIGH,CRITICAL
           exit-code: "1"
@@ -211,31 +212,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build web-admin Docker image
-        run: docker build -f "${WEB_DOCKERFILE}" -t "${WEB_IMAGE}" .
+      - name: Build ERP Docker image
+        run: docker build -f "${ERP_DOCKERFILE}" -t "${ERP_IMAGE}" .
 
       - name: Create ZAP network
         run: docker network create noogym-zap
 
-      - name: Start web-admin container
+      - name: Start ERP container
         run: >
           docker run
           --detach
           --rm
           --network noogym-zap
-          --name noogym-web-admin-zap
+          --name noogym-erp-zap
           -e NODE_ENV=production
-          "${WEB_IMAGE}"
+          "${ERP_IMAGE}"
 
-      - name: Wait for web-admin
+      - name: Wait for ERP
         run: |
-          for attempt in {1..30}; do
-            if docker run --rm --network noogym-zap curlimages/curl:8.10.1 -fsS http://noogym-web-admin-zap:3000 >/dev/null; then
+          for _ in {1..30}; do
+            if docker run --rm --network noogym-zap curlimages/curl:8.10.1 -fsS http://noogym-erp-zap:3000 >/dev/null; then
               exit 0
             fi
             sleep 2
           done
-          docker logs noogym-web-admin-zap
+          docker logs noogym-erp-zap
           exit 1
 
       - name: Run ZAP baseline
@@ -246,7 +247,7 @@ jobs:
           -v "${PWD}/zap-reports:/zap/wrk"
           ghcr.io/zaproxy/zaproxy:stable
           zap-baseline.py
-          -t http://noogym-web-admin-zap:3000
+          -t http://noogym-erp-zap:3000
           -r zap-report.html
           -J zap-report.json
           -w zap-report.md
@@ -259,6 +260,6 @@ jobs:
           path: zap-reports/
           if-no-files-found: ignore
 
-      - name: Stop web-admin container
+      - name: Stop ERP container
         if: ${{ always() }}
-        run: docker rm -f noogym-web-admin-zap || true
+        run: docker rm -f noogym-erp-zap || true
