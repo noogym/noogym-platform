@@ -1,0 +1,281 @@
+import { Calendar, CheckCircle2, ClipboardCheck, CreditCard, Fingerprint, Keyboard, Plus, QrCode, ShoppingCart, UsersRound } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ManualCheckinModal, QrScannerModal } from "../components/modals/OperationalModals";
+import { Avatar } from "../components/ui/Avatar";
+import { Badge } from "@noogym/ui";
+import { Button } from "@noogym/ui";
+import { Card } from "@noogym/ui";
+import { DonutChart, LineChart } from "../components/ui/Charts";
+import { Input } from "@noogym/ui";
+import { MetricCard } from "@noogym/ui";
+import { Tabs } from "@noogym/ui";
+import { formatKz as money } from "@noogym/core";
+import { canAccessRoute } from "../lib/permissions";
+import { useAppStore } from "../store/appStore";
+import { useAuthStore } from "../store/authStore";
+import { useCheckinsStore } from "../store/checkinsStore";
+import { useClassesStore } from "../store/classesStore";
+import { useClientsStore } from "../store/clientsStore";
+import { useEmployeesStore } from "../store/employeesStore";
+import { useFinanceStore } from "../store/financeStore";
+import { usePlansStore } from "../store/plansStore";
+import { useProductsStore } from "../store/productsStore";
+import { useSalesStore } from "../store/salesStore";
+import { toastInfo } from "../store/toastStore";
+import type { CheckinRecord } from "@noogym/types";
+
+const badgeTone = (tone?: string) => (["lime", "yellow", "purple", "blue", "orange", "red", "gray", "green"].includes(tone ?? "") ? tone as "lime" | "yellow" | "purple" | "blue" | "orange" | "red" | "gray" | "green" : "lime");
+
+const quickServices = [
+  { name: "Avaliação física", price: "8.000 Kz", detail: "Sessão individual" },
+  { name: "Personal trainer", price: "12.000 Kz", detail: "Treino acompanhado" },
+  { name: "Plano alimentar", price: "10.000 Kz", detail: "Consulta nutricional" },
+  { name: "Massagem desportiva", price: "15.000 Kz", detail: "Recuperação muscular" }
+];
+const pendingQuickSaleKey = "noogym:pos-pending-item";
+
+const dayMs = 24 * 60 * 60 * 1000;
+const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+const sameDay = (left: Date, right: Date) => startOfDay(left).getTime() === startOfDay(right).getTime();
+const isTodayText = (value?: string) => value?.toLowerCase().startsWith("hoje");
+const isYesterdayText = (value?: string) => value?.toLowerCase().startsWith("ontem");
+const relativeDate = (value?: string, iso?: string) => {
+  if (iso) {
+    const date = new Date(iso);
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+  const today = startOfDay(new Date());
+  if (isTodayText(value)) return today;
+  if (isYesterdayText(value)) return new Date(today.getTime() - dayMs);
+  return undefined;
+};
+const checkinDate = (checkin: CheckinRecord) => relativeDate(checkin.dateTime, checkin.checkedAtIso);
+const timeMinutes = (value?: string) => {
+  const match = value?.match(/(\d{1,2}):(\d{2})/);
+  return match ? Number(match[1]) * 60 + Number(match[2]) : Number.MAX_SAFE_INTEGER;
+};
+const changeVs = (current: number, previous: number, label: string) => {
+  if (!previous && !current) return `= 0 ${label}`;
+  if (!previous) return `+ ${current} ${label}`;
+  const percent = Math.round(((current - previous) / previous) * 100);
+  return `${percent >= 0 ? "+" : ""} ${percent}% ${label}`;
+};
+const weekdayLabel = (date: Date) => new Intl.DateTimeFormat("pt-AO", { weekday: "short" }).format(date).replace(".", "");
+const quickSalePriceValue = (value: string) => {
+  const numeric = value.split("Kz")[0]?.replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
+  const parsed = Number(numeric);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+export default function Dashboard() {
+  const [checkinTab, setCheckinTab] = useState("QR Code");
+  const [manualOpen, setManualOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const setRoute = useAppStore((state) => state.setRoute);
+  const user = useAuthStore((state) => state.user);
+  const clients = useClientsStore((state) => state.clients);
+  const classes = useClassesStore((state) => state.classes);
+  const employees = useEmployeesStore((state) => state.employees);
+  const roles = useEmployeesStore((state) => state.roles);
+  const checkins = useCheckinsStore((state) => state.checkins);
+  const plans = usePlansStore((state) => state.plans);
+  const products = useProductsStore((state) => state.products);
+  const sales = useSalesStore((state) => state.sales);
+  const financeRecords = useFinanceStore((state) => state.records);
+  const canUseCheckin = canAccessRoute("checkin", user, employees, roles);
+  const canUseSales = canAccessRoute("vendas", user, employees, roles);
+  const canViewPlans = canAccessRoute("planos", user, employees, roles);
+  const canViewFinance = canAccessRoute("financas", user, employees, roles);
+  const today = startOfDay(new Date());
+  const yesterday = new Date(today.getTime() - dayMs);
+  const activeClients = useMemo(() => clients.filter((client) => client.status === "Ativo"), [clients]);
+  const todayCheckins = useMemo(() => checkins.filter((checkin) => {
+    const date = checkinDate(checkin);
+    return date ? sameDay(date, today) : isTodayText(checkin.dateTime);
+  }).length, [checkins, today]);
+  const yesterdayCheckins = useMemo(() => checkins.filter((checkin) => {
+    const date = checkinDate(checkin);
+    return date ? sameDay(date, yesterday) : isYesterdayText(checkin.dateTime);
+  }).length, [checkins, yesterday]);
+  const last7Days = useMemo(() => Array.from({ length: 7 }, (_, index) => new Date(today.getTime() - (6 - index) * dayMs)), [today]);
+  const checkinSeries = useMemo(() => last7Days.map((day) => checkins.filter((checkin) => {
+    const date = checkinDate(checkin);
+    return date ? sameDay(date, day) : false;
+  }).length), [checkins, last7Days]);
+  const checkinLabels = useMemo(() => last7Days.map((day, index) => index === 6 ? "Hoje" : weekdayLabel(day)), [last7Days]);
+  const todayRevenue = useMemo(() => {
+    const salesRevenue = sales.filter((sale) => isTodayText(sale.dateTime)).reduce((sum, sale) => sum + sale.total, 0);
+    const financeRevenue = financeRecords.filter((record) => record.kind === "Receita" && isTodayText(record.date)).reduce((sum, record) => sum + record.value, 0);
+    return salesRevenue + financeRevenue;
+  }, [financeRecords, sales]);
+  const yesterdayRevenue = useMemo(() => sales.filter((sale) => isYesterdayText(sale.dateTime)).reduce((sum, sale) => sum + sale.total, 0), [sales]);
+  const activePlans = useMemo(() => plans.filter((plan) => plan.status === "Ativo"), [plans]);
+  const todayClasses = useMemo(() => classes.filter((lesson) => isTodayText(lesson.time)), [classes]);
+  const nextClass = useMemo(() => todayClasses.slice().sort((a, b) => timeMinutes(a.time) - timeMinutes(b.time))[0], [todayClasses]);
+  const clientsWithPlan = useMemo(() => clients.filter((client) => client.plan && client.plan !== "Sem plano"), [clients]);
+  const planDistribution = useMemo(() => {
+    const counts = new Map<string, number>();
+    clientsWithPlan.forEach((client) => counts.set(client.plan, (counts.get(client.plan) ?? 0) + 1));
+    const total = Math.max(clientsWithPlan.length, 1);
+    const fallbackColors = ["#B6FF00", "#FACC15", "#F97316", "#A78BFA", "#38BDF8", "#2DD4BF"];
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([label, count], index) => {
+      const plan = plans.find((item) => item.name === label);
+      return { label, value: Math.round((count / total) * 100), color: plan?.color ?? fallbackColors[index % fallbackColors.length] };
+    });
+  }, [clientsWithPlan, plans]);
+  const activities = useMemo(() => [
+    ...(canUseCheckin ? checkins.slice(0, 4).map((checkin) => ({ id: `checkin-${checkin.id}`, title: "Check-in realizado", subject: checkin.clientName, time: checkin.dateTime, amount: "" })) : []),
+    ...(canUseSales ? sales.slice(0, 3).map((sale) => ({ id: `sale-${sale.id}`, title: "Venda registrada", subject: sale.customer ?? sale.type, time: sale.dateTime, amount: money(sale.total) })) : [])
+  ].sort((a, b) => timeMinutes(b.time) - timeMinutes(a.time)).slice(0, 5), [canUseCheckin, canUseSales, checkins, sales]);
+  const dashboardDate = new Intl.DateTimeFormat("pt-AO", { day: "2-digit", month: "long", year: "numeric" }).format(new Date());
+  const quickSaleItems = useMemo(() => [
+    ...plans.slice(0, 2).map((plan) => ({ id: plan.id, kind: "plan", name: plan.name, price: plan.price, rawPrice: quickSalePriceValue(plan.price), detail: plan.duration })),
+    ...products.slice(0, 1).map((product) => ({ id: product.id, kind: "product", name: product.name, price: money(product.price), rawPrice: product.price, detail: `${product.stock} un`, sku: product.sku })),
+    ...quickServices.slice(0, 1).map((service) => ({ id: service.name, kind: "service", rawPrice: quickSalePriceValue(service.price), ...service })),
+    ...classes.slice(0, 1).map((lesson) => ({ id: lesson.id, kind: "class", name: lesson.name, price: "3.000 Kz", rawPrice: 3000, detail: lesson.time }))
+  ].slice(0, 5), [classes, plans, products]);
+
+  const handleQuickCheckin = () => {
+    if (checkinTab === "QR Code") {
+      setQrOpen(true);
+      return;
+    }
+
+    if (checkinTab === "Biometria") {
+      toastInfo("Biometria nao configurada", "Ative uma integracao biometrica nas configuracoes operacionais para usar este fluxo.");
+      return;
+    }
+
+    setManualOpen(true);
+  };
+  const handleQuickSaleItem = (item: (typeof quickSaleItems)[number]) => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(pendingQuickSaleKey, JSON.stringify({
+        id: item.id,
+        name: item.name,
+        category: "Favoritos",
+        price: item.rawPrice,
+        detail: item.detail,
+        emoji: item.kind === "product" ? "PRD" : item.kind === "plan" ? "PLN" : item.kind === "class" ? "AUL" : "SVC",
+        kind: item.kind,
+        sku: "sku" in item ? item.sku : undefined
+      }));
+    }
+    setRoute("vendas");
+  };
+
+  return (
+    <div className="page-grid dashboard-page-grid">
+      <div className="panel min-w-0 p-4 sm:p-5 lg:p-6">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold sm:text-3xl">Dashboard</h1>
+          <Button className="shrink-0" icon={<Calendar className="h-4 w-4" />}>{dashboardDate}</Button>
+        </div>
+
+        <div className="dashboard-metric-grid">
+          {canUseCheckin ? <MetricCard title="Check-ins hoje" value={String(todayCheckins)} change={changeVs(todayCheckins, yesterdayCheckins, "vs ontem")} icon={<ClipboardCheck className="h-5 w-5" />} /> : null}
+          <MetricCard title="Clientes ativos" value={String(activeClients.length)} change={`${clients.length} clientes cadastrados`} icon={<UsersRound className="h-5 w-5" />} tone="yellow" />
+          {canViewFinance || canUseSales ? <MetricCard title="Receita hoje" value={money(todayRevenue)} change={changeVs(todayRevenue, yesterdayRevenue, "vs ontem")} icon={<CreditCard className="h-5 w-5" />} tone="yellow" /> : null}
+          {canViewPlans ? <MetricCard title="Planos ativos" value={String(activePlans.length)} change={`${plans.length} planos cadastrados`} icon={<CheckCircle2 className="h-5 w-5" />} tone="blue" /> : null}
+          <MetricCard title="Aulas hoje" value={String(todayClasses.length)} change={nextClass ? `Próxima: ${nextClass.time.replace("Hoje, ", "")}` : "Sem aulas hoje"} icon={<Calendar className="h-5 w-5" />} tone="purple" />
+        </div>
+
+        <div className="dashboard-chart-grid mt-4">
+          {canUseCheckin ? <Card className="min-h-[280px] p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="min-w-0 font-semibold">Check-ins nos últimos 7 dias</h2>
+              <Button className="h-8 shrink-0 px-3">Últimos 7 dias</Button>
+            </div>
+            <LineChart values={checkinSeries} labels={checkinLabels} />
+          </Card> : null}
+          {canViewPlans ? <Card className="min-h-[280px] p-4">
+            <h2 className="mb-4 font-semibold">Distribuição de planos</h2>
+            <DonutChart center={String(clientsWithPlan.length)} items={planDistribution} />
+          </Card> : null}
+        </div>
+
+        <div className="dashboard-lists-grid mt-4">
+          <Card className="p-4">
+            <h2 className="mb-3 font-semibold">Atividades recentes</h2>
+            <div className="space-y-3">
+              {activities.map((activity, index) => (
+                <div key={activity.id || `${activity.title}-${activity.subject}-${activity.time}-${index}`} className="flex items-center gap-3 border-b border-white/[0.07] pb-3 last:border-0">
+                  <span className="icon-tile h-9 w-9 text-noogym-lime"><ClipboardCheck className="h-4 w-4" /></span>
+                  <div className="min-w-0 flex-1"><p className="text-sm">{activity.title}</p><p className="text-xs text-zinc-400">{activity.subject}</p></div>
+                  <div className="text-right text-xs text-zinc-400"><p>{activity.time}</p>{activity.amount ? <p className="text-noogym-lime">{activity.amount}</p> : null}</div>
+                </div>
+              ))}
+            </div>
+            <button className="mt-2 text-sm text-noogym-lime">Ver todas as atividades</button>
+          </Card>
+          <Card className="p-4">
+            <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Clientes ativos</h2><button className="text-xs text-noogym-lime" onClick={() => setRoute("clientes")}>Ver todos</button></div>
+            <div className="space-y-3">
+              {activeClients.slice(0, 5).map((client, index) => (
+                <div key={client.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-white/[0.07] pb-3 last:border-0 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto]">
+                  <Avatar label={client.avatar ?? "CL"} />
+                  <p className="min-w-0 truncate text-sm">{client.name}</p>
+                  <Badge tone={badgeTone(client.planTone)}>{client.plan.replace(" Mensal", "")}</Badge>
+                  <p className="col-span-2 text-xs text-zinc-400 sm:col-span-1 sm:text-right">Último check-in: {client.lastCheckin}</p>
+                  <CheckCircle2 className={`h-5 w-5 ${index === 4 ? "text-zinc-300" : "text-noogym-lime"}`} />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {canUseCheckin || canUseSales ? <aside className="dashboard-side">
+        {canUseCheckin ? <Card className="p-4">
+          <h2 className="mb-4 text-lg font-semibold">Check-in rápido</h2>
+          <Input placeholder="Buscar cliente (nome, telefone ou ID)" />
+          <Tabs tabs={["QR Code", "Biometria", "Código"]} active={checkinTab} onChange={setCheckinTab} />
+          <div className="mt-4 flex h-44 flex-col items-center justify-center rounded-lg border border-white/10 bg-black/20 p-4 text-center text-zinc-400">
+            {checkinTab === "Biometria" ? (
+              <>
+                <Fingerprint className="mb-4 h-10 w-10 text-zinc-300" />
+                <p className="max-w-56 text-sm">Encoste o dedo no leitor biométrico para identificar o cliente.</p>
+              </>
+            ) : checkinTab === "Código" ? (
+              <>
+                <Keyboard className="mb-4 h-10 w-10 text-zinc-300" />
+                <Input className="max-w-60 text-center" placeholder="Código do cliente" />
+                <p className="mt-3 max-w-56 text-xs">Digite o código do cliente para validar o acesso.</p>
+              </>
+            ) : (
+              <>
+                <QrCode className="mb-4 h-10 w-10 text-zinc-300" />
+                <p className="max-w-56 text-sm">Aponte a câmera para o QR Code do cliente para realizar o check-in.</p>
+              </>
+            )}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Button onClick={handleQuickCheckin}>{checkinTab === "QR Code" ? "Escanear QR Code" : checkinTab === "Biometria" ? "Iniciar leitura" : "Validar código"}</Button>
+            <Button onClick={() => setManualOpen(true)}>Check-in manual</Button>
+          </div>
+        </Card> : null}
+        {canUseSales ? <Card className="p-4">
+          <div className="mb-3">
+            <h2 className="text-lg font-semibold">Atalhos POS</h2>
+            <p className="mt-1 text-xs text-zinc-400">Favoritos para iniciar uma venda no PDV.</p>
+          </div>
+          <div className="mt-3 space-y-2">
+            {quickSaleItems.map((item) => (
+              <div key={`${item.kind}-${item.id}`} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-white/[0.07] py-2 text-sm">
+                <span className="min-w-0 truncate">{item.name}</span>
+                <span className="text-right">{item.price}</span>
+                <button className="rounded border border-noogym-lime/50 p-1 text-noogym-lime" title="Adicionar no PDV" onClick={() => handleQuickSaleItem(item)}>
+                  <Plus className="h-4 w-4" />
+                </button>
+                {item.detail ? <span className="col-span-3 text-xs text-zinc-400">{item.detail}</span> : null}
+              </div>
+            ))}
+          </div>
+          <Button className="mt-4 w-full" variant="primary" icon={<ShoppingCart className="h-5 w-5" />} onClick={() => setRoute("vendas")}>Abrir PDV</Button>
+        </Card> : null}
+      </aside> : null}
+      {canUseCheckin ? <ManualCheckinModal open={manualOpen} onClose={() => setManualOpen(false)} /> : null}
+      {canUseCheckin ? <QrScannerModal open={qrOpen} onClose={() => setQrOpen(false)} /> : null}
+    </div>
+  );
+}

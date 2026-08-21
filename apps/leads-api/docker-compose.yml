@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: noogym-api-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-noogym_leads}
+      POSTGRES_USER: ${POSTGRES_USER:-noogym}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-noogym}
+    volumes:
+      - api_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-noogym} -d ${POSTGRES_DB:-noogym_leads}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/leads-api/Dockerfile
+    container_name: noogym-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "3333"
+      DATABASE_URL: ${API_DATABASE_URL:-postgresql://noogym:noogym@postgres:5432/noogym_leads?schema=public}
+      WEB_ORIGIN: ${API_WEB_ORIGIN:-http://localhost:3000}
+      ADMIN_API_KEY: ${API_ADMIN_API_KEY:-change-me}
+      WHATSAPP_PHONE_NUMBER: ${API_WHATSAPP_PHONE_NUMBER:-}
+      SMTP_HOST: ${API_SMTP_HOST:-}
+      SMTP_PORT: ${API_SMTP_PORT:-587}
+      SMTP_SECURE: ${API_SMTP_SECURE:-false}
+      SMTP_USER: ${API_SMTP_USER:-}
+      SMTP_PASS: ${API_SMTP_PASS:-}
+      SMTP_FROM: ${API_SMTP_FROM:-}
+      MAIL_PROVIDER: ${API_MAIL_PROVIDER:-auto}
+      MAIL_FROM: ${API_MAIL_FROM:-Noogym <no-reply@noogym.com>}
+      MAIL_TO: ${API_MAIL_TO:-}
+      RESEND_API_KEY: ${API_RESEND_API_KEY:-}
+      RESEND_FROM: ${API_RESEND_FROM:-}
+      RESEND_ENDPOINT: ${API_RESEND_ENDPOINT:-https://api.resend.com/emails}
+      TURNSTILE_SECRET_KEY: ${API_TURNSTILE_SECRET_KEY:-}
+      GOOGLE_MAPS_API_KEY: ${API_GOOGLE_MAPS_API_KEY:-}
+    ports:
+      - "3333:3333"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3333/docs').then(res=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  api_postgres_data:

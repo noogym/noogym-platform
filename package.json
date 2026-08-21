@@ -1,0 +1,68 @@
+{
+  "name": "noogym-platform",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.0.9",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "localhost": "turbo dev --filter=@noogym/erp --filter=@noogym/api",
+    "dev:api": "turbo dev --filter=@noogym/api",
+    "dev:erp": "turbo dev --filter=@noogym/erp",
+    "dev:desktop": "turbo dev --filter=@noogym/desktop",
+    "dev:website": "turbo dev --filter=@noogym/website",
+    "dev:marketing": "turbo dev --filter=@noogym/marketing",
+    "dev:leads-api": "turbo dev --filter=@noogym/leads-api",
+    "dev:print-agent": "pnpm --filter @noogym/print-agent dev",
+    "setup:local": "node scripts/setup-local.cjs",
+    "db:local:up": "docker compose -f docker-compose.yml -f docker-compose.local.yml up -d postgres",
+    "db:local:logs": "docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f postgres",
+    "db:local:down": "docker compose -f docker-compose.yml -f docker-compose.local.yml down",
+    "api:prisma:generate": "pnpm --filter @noogym/api prisma:generate",
+    "api:migrate:deploy": "pnpm --filter @noogym/api exec prisma migrate deploy",
+    "api:seed": "pnpm --filter @noogym/api prisma:seed",
+    "api:bootstrap:super-admin": "pnpm --filter @noogym/api bootstrap:super-admin",
+    "leads:prisma:generate": "pnpm --filter @noogym/leads-api prisma:generate",
+    "leads:migrate": "pnpm --filter @noogym/leads-api prisma:migrate",
+    "leads:studio": "pnpm --filter @noogym/leads-api prisma:studio",
+    "cypress:open": "pnpm --filter @noogym/cypress open",
+    "cypress:install": "pnpm --filter @noogym/cypress install:binary",
+    "cypress:verify": "pnpm --filter @noogym/cypress verify",
+    "cypress:run": "pnpm --filter @noogym/cypress test",
+    "e2e:erp:api": "pnpm --filter @noogym/cypress exec cypress run --spec cypress/e2e/web-admin-api-real.cy.ts",
+    "e2e": "turbo e2e",
+    "build": "turbo build",
+    "build:api": "turbo build --filter=@noogym/api",
+    "build:erp": "turbo build --filter=@noogym/erp",
+    "build:desktop": "turbo build --filter=@noogym/desktop",
+    "build:website": "turbo build --filter=@noogym/website",
+    "build:marketing": "turbo build --filter=@noogym/marketing",
+    "build:leads-api": "turbo build --filter=@noogym/leads-api",
+    "build:print-agent": "pnpm --filter @noogym/print-agent build",
+    "docker:api:build": "docker build -f apps/api/Dockerfile -t noogym-api .",
+    "docker:api:run": "docker run --env-file deploy.env -p 3333:3333 noogym-api",
+    "docker:erp:build": "docker build -f apps/erp/Dockerfile -t noogym-erp .",
+    "docker:erp:run": "docker run -p 3000:3000 noogym-erp",
+    "docker:website:build": "docker build -f apps/website/Dockerfile -t noogym-website .",
+    "docker:marketing:build": "docker build -f apps/marketing/Dockerfile -t noogym-marketing .",
+    "docker:leads-api:build": "docker build -f apps/leads-api/Dockerfile -t noogym-leads-api .",
+    "docker:compose:up": "docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build",
+    "docker:compose:down": "docker compose -f docker-compose.yml -f docker-compose.local.yml down",
+    "docker:compose:logs": "docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.6.1",
+    "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.14",
+      "qs": "6.15.2"
+    }
+  }
+}

@@ -1,0 +1,877 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  DEMO_SCHEDULED
+  PROPOSAL_SENT
+  WON
+  LOST
+}
+
+enum CurrentStudentsRange {
+  UP_TO_100
+  FROM_101_TO_300
+  FROM_301_TO_500
+  FROM_501_TO_1000
+  MORE_THAN_1000
+}
+
+enum UnitsRange {
+  ONE
+  TWO_TO_THREE
+  FOUR_TO_TEN
+  MORE_THAN_TEN
+}
+
+enum MainChallenge {
+  LATE_PAYMENTS
+  ACCESS_CONTROL
+  LACK_OF_REPORTS
+  STUDENT_MANAGEMENT
+  STUDENT_RETENTION
+  OTHER
+}
+
+enum UserRole {
+  CUSTOMER
+  GYM_OWNER
+  GYM_STAFF
+  ADMIN
+  AUTHOR
+}
+
+enum NoogymAccessScope {
+  SITE
+  MOBILE_APP
+  GYM_ERP
+  PERSONAL_PANEL
+  MARKET_SELLER
+  ADMIN_PANEL
+}
+
+enum AccessStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+  REVOKED
+}
+
+enum GymStaffRole {
+  OWNER
+  MANAGER
+  RECEPTION
+  TRAINER
+  FINANCE
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+  DELETED
+}
+
+enum GymStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum CheckInStatus {
+  VALID
+  CANCELED
+  EXPIRED
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  OUT_OF_STOCK
+  ARCHIVED
+}
+
+enum CartStatus {
+  ACTIVE
+  ORDERED
+  ABANDONED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  COMPLETED
+  CANCELED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELED
+  FINISHED
+}
+
+enum EventRegistrationStatus {
+  REGISTERED
+  CHECKED_IN
+  CANCELED
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TestimonialAudience {
+  CUSTOMER
+  GYM_OWNER
+  PARTNER
+}
+
+model DemoRequestLead {
+  id                   String               @id @default(cuid())
+  fullName             String
+  gymName              String
+  whatsapp             String
+  email                String?
+  city                 String
+  currentStudentsRange CurrentStudentsRange
+  unitsRange           UnitsRange?
+  mainChallenge        MainChallenge
+  message              String?
+  status               LeadStatus           @default(NEW)
+  source               String?
+  campaign             String?
+  utmSource            String?
+  utmMedium            String?
+  utmCampaign          String?
+  utmContent           String?
+  utmTerm              String?
+  ipAddress            String?
+  userAgent            String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([city])
+  @@index([mainChallenge])
+  @@index([whatsapp, gymName])
+}
+
+model FitlandiaLead {
+  id        String     @id @default(cuid())
+  profile   String
+  fullName  String
+  whatsapp  String
+  email     String?
+  city      String?
+  business  String?
+  objective String?
+  extra     Json?
+  source    String     @default("fitlandia-modal")
+  campaign  String     @default("fitlandia-2026")
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([createdAt])
+  @@index([profile])
+  @@index([whatsapp])
+  @@index([campaign])
+}
+
+model User {
+  id              String               @id @default(cuid())
+  name            String
+  email           String               @unique
+  phone           String?
+  passwordHash    String?
+  avatarUrl       String?
+  role            UserRole             @default(CUSTOMER)
+  status          UserStatus           @default(ACTIVE)
+  emailVerifiedAt DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  accounts        AuthAccount[]
+  passwordTokens  PasswordResetToken[]
+  ownedGyms       Gym[]                @relation("GymOwner")
+  subscriptions   UserSubscription[]
+  checkIns        CheckIn[]
+  reviews         GymReview[]
+  carts           Cart[]
+  orders          Order[]
+  registrations   EventRegistration[]
+  articles        Article[]
+  accesses        UserAccess[]
+  gymMemberships  GymStaffMembership[]
+
+  @@index([role])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model UserAccess {
+  id          String             @id @default(cuid())
+  userId      String
+  scope       NoogymAccessScope
+  status      AccessStatus       @default(ACTIVE)
+  requestedAt DateTime?
+  approvedAt  DateTime?
+  revokedAt   DateTime?
+  metadata    Json?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scope])
+  @@index([scope, status])
+  @@index([userId, status])
+}
+
+model AuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String?
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model Gym {
+  id               String           @id @default(cuid())
+  ownerId          String?
+  slug             String           @unique
+  name             String
+  shortDescription String?
+  description      String?
+  phone            String?
+  email            String?
+  website          String?
+  address          String?
+  neighborhood     String?
+  city             String
+  province         String?
+  country          String           @default("Angola")
+  latitude         Decimal?         @db.Decimal(10, 7)
+  longitude        Decimal?         @db.Decimal(10, 7)
+  basePrice        Int?
+  ratingAvg        Float            @default(0)
+  reviewCount      Int              @default(0)
+  coverImage       String?
+  status           GymStatus        @default(DRAFT)
+  publishedAt      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  owner            User?            @relation("GymOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  images           GymImage[]
+  amenities        GymAmenity[]
+  openingHours     GymOpeningHour[]
+  classes          GymClass[]
+  plans            GymPlan[]
+  reviews          GymReview[]
+  checkIns         CheckIn[]
+  stores           Store[]
+  events           Event[]
+  partners         Partner[]
+  discoveredPlaces DiscoveredGymPlace[]
+  staffMemberships GymStaffMembership[]
+
+  @@index([ownerId])
+  @@index([city])
+  @@index([status])
+  @@index([publishedAt])
+}
+
+model GymStaffMembership {
+  id        String       @id @default(cuid())
+  userId    String
+  gymId     String
+  role      GymStaffRole
+  status    AccessStatus @default(PENDING)
+  invitedBy String?
+  invitedAt DateTime?
+  approvedAt DateTime?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gym       Gym          @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gymId, role])
+  @@index([gymId, status])
+  @@index([userId, status])
+}
+
+model DiscoveredGymPlace {
+  id            String    @id @default(cuid())
+  provider      String    @default("google")
+  placeId       String
+  matchedGymId  String?
+  name          String
+  address       String?
+  city          String?
+  country       String    @default("Angola")
+  latitude      Decimal?  @db.Decimal(10, 7)
+  longitude     Decimal?  @db.Decimal(10, 7)
+  rating        Float?
+  reviewCount   Int       @default(0)
+  openNow       Boolean?
+  types         Json?
+  status        String    @default("DISCOVERED")
+  lastFetchedAt DateTime  @default(now())
+  expiresAt     DateTime
+  hiddenAt      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  matchedGym    Gym?      @relation(fields: [matchedGymId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, placeId])
+  @@index([provider, expiresAt])
+  @@index([status])
+  @@index([matchedGymId])
+}
+
+model PlaceDiscoverySearch {
+  id           String   @id @default(cuid())
+  provider     String   @default("google")
+  cacheKey     String
+  latitude     Decimal  @db.Decimal(10, 7)
+  longitude    Decimal  @db.Decimal(10, 7)
+  radiusMeters Int
+  limit        Int
+  resultCount  Int      @default(0)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([provider, cacheKey])
+  @@index([provider, expiresAt])
+}
+
+model GymImage {
+  id        String   @id @default(cuid())
+  gymId     String
+  url       String
+  alt       String?
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  gym       Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@index([gymId, position])
+}
+
+model Amenity {
+  id        String       @id @default(cuid())
+  slug      String       @unique
+  name      String
+  icon      String?
+  gyms      GymAmenity[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model GymAmenity {
+  gymId     String
+  amenityId String
+  gym       Gym     @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  amenity   Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([gymId, amenityId])
+  @@index([amenityId])
+}
+
+model GymOpeningHour {
+  id        String    @id @default(cuid())
+  gymId     String
+  dayOfWeek DayOfWeek
+  opensAt   String?
+  closesAt  String?
+  label     String?
+  isClosed  Boolean   @default(false)
+  gym       Gym       @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@unique([gymId, dayOfWeek])
+}
+
+model GymClass {
+  id              String     @id @default(cuid())
+  gymId           String
+  name            String
+  description     String?
+  trainerName     String?
+  dayOfWeek       DayOfWeek?
+  startTime       String?
+  durationMinutes Int?
+  capacity        Int?
+  included        Boolean    @default(true)
+  price           Int?
+  active          Boolean    @default(true)
+  gym             Gym        @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@index([gymId])
+  @@index([active])
+}
+
+model GymPlan {
+  id           String   @id @default(cuid())
+  gymId        String
+  name         String
+  description  String?
+  monthlyPrice Int
+  features     Json
+  active       Boolean  @default(true)
+  position     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  gym          Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@index([gymId, active])
+}
+
+model GymReview {
+  id         String   @id @default(cuid())
+  gymId      String
+  userId     String?
+  authorName String?
+  rating     Int
+  comment    String?
+  published  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  gym        Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([gymId, published])
+  @@index([userId])
+}
+
+model MembershipPlan {
+  id               String                @id @default(cuid())
+  slug             String                @unique
+  name             String
+  subtitle         String?
+  monthlyPrice     Int
+  yearlyPrice      Int?
+  popular          Boolean               @default(false)
+  active           Boolean               @default(true)
+  position         Int                   @default(0)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  features         PlanFeature[]
+  comparisonValues PlanComparisonValue[]
+  subscriptions    UserSubscription[]
+
+  @@index([active, position])
+}
+
+model PlanFeature {
+  id       String         @id @default(cuid())
+  planId   String
+  text     String
+  position Int            @default(0)
+  plan     MembershipPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId, position])
+}
+
+model PlanComparisonRow {
+  id       String                @id @default(cuid())
+  label    String
+  position Int                   @default(0)
+  values   PlanComparisonValue[]
+
+  @@index([position])
+}
+
+model PlanComparisonValue {
+  id     String            @id @default(cuid())
+  rowId  String
+  planId String
+  value  String
+  row    PlanComparisonRow @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  plan   MembershipPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([rowId, planId])
+  @@index([planId])
+}
+
+model UserSubscription {
+  id                 String             @id @default(cuid())
+  userId             String
+  planId             String
+  status             SubscriptionStatus @default(ACTIVE)
+  startsAt           DateTime           @default(now())
+  endsAt             DateTime?
+  canceledAt         DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan               MembershipPlan     @relation(fields: [planId], references: [id], onDelete: Restrict)
+  checkIns           CheckIn[]
+
+  @@index([userId, status])
+  @@index([planId])
+}
+
+model CheckIn {
+  id             String            @id @default(cuid())
+  userId         String
+  gymId          String
+  subscriptionId String?
+  status         CheckInStatus     @default(VALID)
+  checkedInAt    DateTime          @default(now())
+  expiresAt      DateTime?
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gym            Gym               @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  subscription   UserSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, checkedInAt])
+  @@index([gymId, checkedInAt])
+  @@index([subscriptionId])
+}
+
+model Store {
+  id          String    @id @default(cuid())
+  ownerGymId  String?
+  slug        String    @unique
+  name        String
+  description String?
+  logoUrl     String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  ownerGym    Gym?      @relation(fields: [ownerGymId], references: [id], onDelete: SetNull)
+  products    Product[]
+
+  @@index([ownerGymId])
+  @@index([active])
+}
+
+model ProductCategory {
+  id        String            @id @default(cuid())
+  parentId  String?
+  slug      String            @unique
+  name      String
+  position  Int               @default(0)
+  parent    ProductCategory?  @relation("ProductCategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  ProductCategory[] @relation("ProductCategoryTree")
+  products  Product[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([parentId])
+  @@index([position])
+}
+
+model Product {
+  id            String           @id @default(cuid())
+  categoryId    String?
+  storeId       String?
+  slug          String           @unique
+  sku           String?          @unique
+  name          String
+  description   String?
+  price         Int
+  oldPrice      Int?
+  stock         Int              @default(0)
+  ratingAvg     Float            @default(0)
+  reviewCount   Int              @default(0)
+  discountLabel String?
+  image         String?
+  status        ProductStatus    @default(DRAFT)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  category      ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  store         Store?           @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+
+  @@index([categoryId])
+  @@index([storeId])
+  @@index([status])
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String?
+  sessionId String?
+  status    CartStatus @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+
+  @@index([userId, status])
+  @@index([sessionId, status])
+}
+
+model CartItem {
+  id            String  @id @default(cuid())
+  cartId        String
+  productId     String
+  quantity      Int     @default(1)
+  priceSnapshot Int
+  cart          Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product       Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([cartId, productId])
+  @@index([productId])
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  userId        String?
+  customerName  String?
+  customerEmail String?
+  customerPhone String?
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  currency      String        @default("Kz")
+  subtotal      Int
+  totalAmount   Int
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+  payments      Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  productId  String?
+  name       String
+  quantity   Int
+  unitPrice  Int
+  totalPrice Int
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String
+  amount      Int
+  currency    String        @default("Kz")
+  method      String?
+  provider    String?
+  providerRef String?
+  status      PaymentStatus @default(PENDING)
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+  @@index([providerRef])
+}
+
+model EventCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  position  Int      @default(0)
+  events    Event[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([position])
+}
+
+model Event {
+  id               String              @id @default(cuid())
+  categoryId       String?
+  gymId            String?
+  slug             String              @unique
+  title            String
+  description      String?
+  startAt          DateTime
+  endAt            DateTime?
+  locationName     String?
+  address          String?
+  image            String?
+  capacity         Int?
+  participantCount Int                 @default(0)
+  status           EventStatus         @default(DRAFT)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  category         EventCategory?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  gym              Gym?                @relation(fields: [gymId], references: [id], onDelete: SetNull)
+  registrations    EventRegistration[]
+
+  @@index([categoryId])
+  @@index([gymId])
+  @@index([status, startAt])
+}
+
+model EventRegistration {
+  id        String                  @id @default(cuid())
+  eventId   String
+  userId    String?
+  fullName  String?
+  email     String?
+  phone     String?
+  status    EventRegistrationStatus @default(REGISTERED)
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+  event     Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([eventId, status])
+  @@index([userId])
+}
+
+model ArticleCategory {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  name      String
+  position  Int       @default(0)
+  articles  Article[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([position])
+}
+
+model Article {
+  id              String                 @id @default(cuid())
+  categoryId      String?
+  authorId        String?
+  slug            String                 @unique
+  title           String
+  summary         String?
+  body            String?
+  image           String?
+  readTimeMinutes Int?
+  status          ArticleStatus          @default(DRAFT)
+  publishedAt     DateTime?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  category        ArticleCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  author          User?                  @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  sections        ArticleSection[]
+  checklist       ArticleChecklistItem[]
+
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([status, publishedAt])
+}
+
+model ArticleSection {
+  id         String   @id @default(cuid())
+  articleId  String
+  title      String
+  paragraphs Json
+  position   Int      @default(0)
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId, position])
+}
+
+model ArticleChecklistItem {
+  id        String  @id @default(cuid())
+  articleId String
+  text      String
+  position  Int     @default(0)
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId, position])
+}
+
+model Testimonial {
+  id        String              @id @default(cuid())
+  name      String
+  role      String?
+  quote     String
+  avatarUrl String?
+  rating    Int?
+  audience  TestimonialAudience @default(CUSTOMER)
+  active    Boolean             @default(true)
+  position  Int                 @default(0)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([audience, active])
+  @@index([position])
+}
+
+model Partner {
+  id        String   @id @default(cuid())
+  gymId     String?
+  slug      String   @unique
+  name      String
+  logoUrl   String?
+  website   String?
+  active    Boolean  @default(true)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  gym       Gym?     @relation(fields: [gymId], references: [id], onDelete: SetNull)
+
+  @@index([gymId])
+  @@index([active, position])
+}

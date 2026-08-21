@@ -1,0 +1,50 @@
+{
+  "extends": "../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@noogym/admin": [
+        "../../packages/admin/src/index.ts"
+      ],
+      "@noogym/admin/*": [
+        "../../packages/admin/src/*"
+      ],
+      "@noogym/ui": [
+        "../../packages/ui/src/index.ts"
+      ],
+      "@noogym/core": [
+        "../../packages/core/src/index.ts"
+      ],
+      "@noogym/types": [
+        "../../packages/types/src/index.ts"
+      ],
+      "@noogym/data-access": [
+        "../../packages/data-access/src/index.ts"
+      ],
+      "@noogym/data-access/webAdapter": [
+        "../../packages/data-access/src/adapters/webAdapter.ts"
+      ]
+    },
+    "jsx": "preserve"
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "../../packages/**/*.ts",
+    "../../packages/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

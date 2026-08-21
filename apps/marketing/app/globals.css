@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #020403;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+::selection {
+  background: rgba(182, 255, 0, 0.28);
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020403;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #26331a;
+  border-radius: 999px;
+}
+
+@layer components {
+  .section-shell {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .eyebrow {
+    @apply text-xs font-black uppercase tracking-[0.18em] text-noogym-green;
+  }
+
+  .glass-card {
+    @apply border border-white/10 bg-white/[0.035] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)];
+  }
+
+  .green-button {
+    @apply inline-flex max-w-full min-w-0 items-center justify-center gap-2 rounded-md bg-noogym-green px-5 py-3 text-center text-sm font-black leading-snug text-black transition duration-200 hover:bg-white hover:shadow-neon focus:outline-none focus:ring-2 focus:ring-noogym-green focus:ring-offset-2 focus:ring-offset-black;
+  }
+
+  .dark-button {
+    @apply inline-flex max-w-full min-w-0 items-center justify-center gap-2 rounded-md border border-white/15 bg-black/30 px-5 py-3 text-center text-sm font-bold leading-snug text-white transition duration-200 hover:border-noogym-green hover:text-noogym-green hover:shadow-neon-soft focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-noogym-green;
+  }
+
+  .field {
+    @apply w-full min-w-0 rounded-md border border-white/15 bg-black/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-noogym-green focus:ring-2 focus:ring-noogym-green/20;
+  }
+
+  .field-error {
+    @apply border-red-400/80 focus:border-red-400 focus:ring-red-400/20;
+  }
+}
