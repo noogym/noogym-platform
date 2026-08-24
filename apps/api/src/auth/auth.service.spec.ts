@@ -46,17 +46,22 @@ describe('AuthService refresh tokens', () => {
     const passwordResetEmail = {
       sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
     };
+    const welcomeEmail = {
+      sendWelcomeEmail: jest.fn().mockResolvedValue(true),
+    };
 
     return {
       prisma,
       jwtService,
       config,
       passwordResetEmail,
+      welcomeEmail,
       service: new AuthService(
         prisma as any,
         jwtService as any,
         config as any,
         passwordResetEmail as any,
+        welcomeEmail as any,
       ),
     };
   }
@@ -183,6 +188,51 @@ describe('AuthService refresh tokens', () => {
       to: 'admin@noogym.com',
       name: 'Admin',
       resetUrl: response.resetUrl,
+    });
+  });
+
+  it('sends a welcome email after registration', async () => {
+    const { prisma, service, welcomeEmail } = createService();
+    const organization = { id: 'org-1', name: 'Iron House' };
+    const user = {
+      id: 'user-1',
+      email: 'owner@gym.com',
+      name: 'Owner',
+      role: UserRole.OWNER,
+      status: UserStatus.ACTIVE,
+      organizationId: organization.id,
+      refreshTokenHash: null,
+      organization,
+      employeeProfile: null,
+      gyms: [],
+    };
+
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.organization.findUnique.mockResolvedValue(null);
+    prisma.user.update.mockResolvedValue({ id: user.id });
+    prisma.$transaction.mockImplementation(async (callback: any) =>
+      callback({
+        organization: {
+          create: jest.fn().mockResolvedValue(organization),
+        },
+        user: {
+          create: jest.fn().mockResolvedValue(user),
+        },
+      }),
+    );
+
+    await service.register({
+      email: user.email,
+      name: user.name,
+      organizationName: organization.name,
+      organizationSlug: 'iron-house',
+      password: 'StrongPass123',
+    });
+
+    expect(welcomeEmail.sendWelcomeEmail).toHaveBeenCalledWith({
+      to: user.email,
+      name: user.name,
+      organizationName: organization.name,
     });
   });
 

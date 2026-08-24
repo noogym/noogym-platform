@@ -17,6 +17,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { PasswordResetEmailService } from './password-reset-email.service';
+import { WelcomeEmailService } from './welcome-email.service';
 
 type AuthUserWithRelations = {
   id: string;
@@ -65,6 +66,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly passwordResetEmail: PasswordResetEmailService,
+    private readonly welcomeEmail: WelcomeEmailService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -110,6 +112,19 @@ export class AuthService {
         },
       });
     });
+
+    void this.welcomeEmail
+      .sendWelcomeEmail({
+        to: user.email,
+        name: user.name,
+        organizationName: user.organization?.name ?? dto.organizationName,
+      })
+      .catch((error) => {
+        this.logger.error(
+          'Welcome email could not be sent.',
+          error instanceof Error ? error.stack : undefined,
+        );
+      });
 
     return this.buildAuthResponse(user);
   }

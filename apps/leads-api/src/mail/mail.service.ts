@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { DemoRequestLead } from "@prisma/client";
 import nodemailer, { type SendMailOptions, type Transporter } from "nodemailer";
+import { EmailTemplateService } from "./email-template.service";
 
 type MailProvider = "auto" | "smtp" | "resend" | "disabled";
 
@@ -40,7 +41,10 @@ export class MailService {
   private transporter?: Transporter;
   private readonly config?: MailConfig;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly emailTemplate: EmailTemplateService,
+  ) {
     this.config = this.readConfig();
 
     if (!this.config) {
@@ -63,7 +67,9 @@ export class MailService {
       });
     }
 
-    this.logger.log(`Mail provider mode: ${this.config.provider}. Available providers: ${this.describeAvailableProviders()}.`);
+    this.logger.log(
+      `Mail provider mode: ${this.config.provider}. Available providers: ${this.describeAvailableProviders()}.`,
+    );
   }
 
   async sendDemoRequestEmails(lead: DemoRequestLead) {
@@ -88,30 +94,44 @@ export class MailService {
       return;
     }
 
-    const resetUrl = new URL("/esqueci-senha", this.configService.get<string>("WEB_ORIGIN", "http://localhost:3000"));
+    const resetUrl = new URL(
+      "/esqueci-senha",
+      this.configService.get<string>("WEB_ORIGIN", "http://localhost:3000"),
+    );
     resetUrl.searchParams.set("token", token);
 
-    await this.sendMail({
-      to: email,
-      subject: "Recuperacao de senha Noogym",
-      text: [
-        "Recebemos um pedido para redefinir a sua senha Noogym.",
-        "",
-        `Abra este link para criar uma nova senha: ${resetUrl.toString()}`,
-        `O link expira em ${expiresAt.toISOString()}.`,
-        "",
-        "Se voce nao pediu esta alteracao, ignore este e-mail.",
-      ].join("\n"),
-      html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
-          <h2>Recuperacao de senha Noogym</h2>
-          <p>Recebemos um pedido para redefinir a sua senha.</p>
-          <p><a href="${escapeHtml(resetUrl.toString())}">Criar nova senha</a></p>
-          <p>O link expira em ${escapeHtml(expiresAt.toISOString())}.</p>
-          <p>Se voce nao pediu esta alteracao, ignore este e-mail.</p>
-        </div>
-      `,
-    }, "password-reset").catch((error: unknown) => {
+    await this.sendMail(
+      {
+        to: email,
+        subject: "Recuperacao de senha Noogym",
+        text: [
+          "Recebemos um pedido para redefinir a sua senha Noogym.",
+          "",
+          `Abra este link para criar uma nova senha: ${resetUrl.toString()}`,
+          `O link expira em ${expiresAt.toISOString()}.`,
+          "",
+          "Se voce nao pediu esta alteracao, ignore este e-mail.",
+        ].join("\n"),
+        html: this.emailTemplate.render({
+          button: { label: "Criar nova senha", url: resetUrl.toString() },
+          details: [
+            { label: "Validade", value: expiresAt.toLocaleString("pt-AO") },
+          ],
+          eyebrow: "Seguranca da conta",
+          footerNote:
+            "Se voce nao solicitou esta recuperacao, pode ignorar esta mensagem com seguranca.",
+          intro: [
+            "Recebemos um pedido para redefinir a senha da sua conta Noogym.",
+            "Use o botao abaixo para criar uma nova senha e continuar a aceder a sua conta.",
+          ],
+          preheader: "Use o link seguro para redefinir a sua senha Noogym.",
+          secondary:
+            "Por seguranca, nunca partilhe este link com outras pessoas.",
+          title: "Redefina a sua senha",
+        }),
+      },
+      "password-reset",
+    ).catch((error: unknown) => {
       this.logger.warn(`Failed to send password reset e-mail: ${error}`);
     });
   }
@@ -121,12 +141,15 @@ export class MailService {
       return;
     }
 
-    await this.sendMail({
-      to: lead.email,
-      subject: "Recebemos o seu pedido de demonstração Noogym",
-      text: buildCustomerText(lead),
-      html: buildCustomerHtml(lead),
-    }, "demo-customer");
+    await this.sendMail(
+      {
+        to: lead.email,
+        subject: "Recebemos o seu pedido de demonstracao Noogym",
+        text: this.buildCustomerText(lead),
+        html: this.buildCustomerHtml(lead),
+      },
+      "demo-customer",
+    );
   }
 
   private async sendInternalNotification(lead: DemoRequestLead) {
@@ -134,19 +157,24 @@ export class MailService {
       return;
     }
 
-    await this.sendMail({
-      to: this.config.to,
-      subject: `Novo pedido de demonstração: ${lead.gymName}`,
-      text: buildInternalText(lead),
-      html: buildInternalHtml(lead),
-    }, "demo-internal");
+    await this.sendMail(
+      {
+        to: this.config.to,
+        subject: `Novo pedido de demonstracao: ${lead.gymName}`,
+        text: this.buildInternalText(lead),
+        html: this.buildInternalHtml(lead),
+      },
+      "demo-internal",
+    );
   }
 
   private async sendMail(message: MailMessage, context: string) {
     const providers = this.getProviderOrder();
 
     if (!providers.length) {
-      this.logger.log(`No mail provider available. Skipping ${context} e-mail to ${message.to}.`);
+      this.logger.log(
+        `No mail provider available. Skipping ${context} e-mail to ${message.to}.`,
+      );
       return;
     }
 
@@ -160,15 +188,21 @@ export class MailService {
           await this.sendViaSmtp(message);
         }
 
-        this.logger.log(`Sent ${context} e-mail to ${message.to} via ${provider}.`);
+        this.logger.log(
+          `Sent ${context} e-mail to ${message.to} via ${provider}.`,
+        );
         return;
       } catch (error) {
         errors.push(error);
-        this.logger.warn(`Failed to send ${context} e-mail via ${provider}: ${error}`);
+        this.logger.warn(
+          `Failed to send ${context} e-mail via ${provider}: ${error}`,
+        );
       }
     }
 
-    throw new Error(`All mail providers failed for ${context}: ${errors.map(String).join(" | ")}`);
+    throw new Error(
+      `All mail providers failed for ${context}: ${errors.map(String).join(" | ")}`,
+    );
   }
 
   private async sendViaSmtp(message: MailMessage) {
@@ -211,8 +245,83 @@ export class MailService {
 
     if (!response.ok) {
       const body = await response.text().catch(() => "");
-      throw new Error(`Resend returned ${response.status}: ${body.slice(0, 500)}`);
+      throw new Error(
+        `Resend returned ${response.status}: ${body.slice(0, 500)}`,
+      );
     }
+  }
+
+  private buildCustomerText(lead: DemoRequestLead) {
+    return [
+      `Ola ${lead.fullName},`,
+      "",
+      `Recebemos o seu pedido de demonstracao para o ginasio ${lead.gymName}.`,
+      "A equipa Noogym entrara em contacto consigo em breve para agendar a melhor data.",
+      "",
+      "Obrigado,",
+      "Equipa Noogym",
+    ].join("\n");
+  }
+
+  private buildCustomerHtml(lead: DemoRequestLead) {
+    return this.emailTemplate.render({
+      details: [{ label: "Ginasio", value: lead.gymName }],
+      eyebrow: "Pedido de demonstracao",
+      footerNote:
+        "Recebeu esta mensagem porque submeteu um pedido de demonstracao Noogym.",
+      greeting: `Ola, ${lead.fullName}`,
+      intro: [
+        `Recebemos o seu pedido de demonstracao para o ginasio ${lead.gymName}.`,
+        "A equipa Noogym entrara em contacto consigo em breve para agendar a melhor data.",
+      ],
+      preheader: "A equipa Noogym recebeu o seu pedido de demonstracao.",
+      secondary:
+        "Obrigado por considerar a Noogym para a gestao do seu ginasio.",
+      title: "Pedido recebido",
+    });
+  }
+
+  private buildInternalText(lead: DemoRequestLead) {
+    return [
+      "Novo pedido de demonstracao Noogym",
+      "",
+      `Nome: ${lead.fullName}`,
+      `Ginasio: ${lead.gymName}`,
+      `WhatsApp: ${lead.whatsapp}`,
+      `E-mail: ${lead.email ?? "Nao informado"}`,
+      `Cidade: ${lead.city}`,
+      `Alunos: ${lead.currentStudentsRange}`,
+      `Unidades: ${lead.unitsRange ?? "Nao informado"}`,
+      `Desafio: ${lead.mainChallenge}`,
+      `Mensagem: ${lead.message ?? "Nao informada"}`,
+      `Origem: ${lead.source ?? "Nao informada"}`,
+      `Campanha: ${lead.campaign ?? "Nao informada"}`,
+    ].join("\n");
+  }
+
+  private buildInternalHtml(lead: DemoRequestLead) {
+    return this.emailTemplate.render({
+      details: [
+        { label: "Nome", value: lead.fullName },
+        { label: "Ginasio", value: lead.gymName },
+        { label: "WhatsApp", value: lead.whatsapp },
+        { label: "E-mail", value: lead.email ?? "Nao informado" },
+        { label: "Cidade", value: lead.city },
+        { label: "Alunos", value: lead.currentStudentsRange },
+        { label: "Unidades", value: lead.unitsRange ?? "Nao informado" },
+        { label: "Desafio", value: lead.mainChallenge },
+        { label: "Mensagem", value: lead.message ?? "Nao informada" },
+        { label: "Origem", value: lead.source ?? "Nao informada" },
+        { label: "Campanha", value: lead.campaign ?? "Nao informada" },
+      ],
+      eyebrow: "Lead comercial",
+      intro: [
+        "Um novo pedido de demonstracao foi submetido nos canais Noogym.",
+        "Veja os dados abaixo para priorizar o contacto comercial.",
+      ],
+      preheader: `Novo pedido de demonstracao de ${lead.gymName}.`,
+      title: "Novo pedido de demonstracao",
+    });
   }
 
   private getProviderOrder() {
@@ -266,7 +375,10 @@ export class MailService {
     const resend = apiKey
       ? {
           apiKey,
-          endpoint: this.configService.get<string>("RESEND_ENDPOINT", "https://api.resend.com/emails"),
+          endpoint: this.configService.get<string>(
+            "RESEND_ENDPOINT",
+            "https://api.resend.com/emails",
+          ),
           from: resendFrom,
         }
       : undefined;
@@ -275,14 +387,17 @@ export class MailService {
       return undefined;
     }
 
-    const configured = provider === "auto"
-      ? Boolean(smtp || resend)
-      : provider === "smtp"
-        ? Boolean(smtp)
-        : Boolean(resend);
+    const configured =
+      provider === "auto"
+        ? Boolean(smtp || resend)
+        : provider === "smtp"
+          ? Boolean(smtp)
+          : Boolean(resend);
 
     if (!configured) {
-      this.logger.warn(`MAIL_PROVIDER=${provider} but no matching provider is configured. E-mails will be skipped.`);
+      this.logger.warn(
+        `MAIL_PROVIDER=${provider} but no matching provider is configured. E-mails will be skipped.`,
+      );
       return undefined;
     }
 
@@ -295,7 +410,9 @@ export class MailService {
   }
 
   private readProvider(): MailProvider {
-    const provider = this.configService.get<string>("MAIL_PROVIDER", "auto").toLowerCase();
+    const provider = this.configService
+      .get<string>("MAIL_PROVIDER", "auto")
+      .toLowerCase();
 
     if (provider === "smtp" || provider === "resend" || provider === "disabled") {
       return provider;
@@ -303,94 +420,4 @@ export class MailService {
 
     return "auto";
   }
-}
-
-function buildCustomerText(lead: DemoRequestLead) {
-  return [
-    `Olá ${lead.fullName},`,
-    "",
-    `Recebemos o seu pedido de demonstração para o ginásio ${lead.gymName}.`,
-    "A equipa Noogym entrará em contacto consigo em breve para agendar a melhor data.",
-    "",
-    "Obrigado,",
-    "Equipa Noogym",
-  ].join("\n");
-}
-
-function buildCustomerHtml(lead: DemoRequestLead) {
-  return `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
-      <h2>Recebemos o seu pedido de demonstração</h2>
-      <p>Olá ${escapeHtml(lead.fullName)},</p>
-      <p>
-        Recebemos o seu pedido de demonstração para o ginásio
-        <strong>${escapeHtml(lead.gymName)}</strong>.
-      </p>
-      <p>
-        A equipa Noogym entrará em contacto consigo em breve para agendar a melhor data.
-      </p>
-      <p>Obrigado,<br />Equipa Noogym</p>
-    </div>
-  `;
-}
-
-function buildInternalText(lead: DemoRequestLead) {
-  return [
-    "Novo pedido de demonstração Noogym",
-    "",
-    `Nome: ${lead.fullName}`,
-    `Ginásio: ${lead.gymName}`,
-    `WhatsApp: ${lead.whatsapp}`,
-    `E-mail: ${lead.email ?? "Não informado"}`,
-    `Cidade: ${lead.city}`,
-    `Alunos: ${lead.currentStudentsRange}`,
-    `Unidades: ${lead.unitsRange ?? "Não informado"}`,
-    `Desafio: ${lead.mainChallenge}`,
-    `Mensagem: ${lead.message ?? "Não informada"}`,
-    `Origem: ${lead.source ?? "Não informada"}`,
-    `Campanha: ${lead.campaign ?? "Não informada"}`,
-  ].join("\n");
-}
-
-function buildInternalHtml(lead: DemoRequestLead) {
-  const rows = [
-    ["Nome", lead.fullName],
-    ["Ginásio", lead.gymName],
-    ["WhatsApp", lead.whatsapp],
-    ["E-mail", lead.email ?? "Não informado"],
-    ["Cidade", lead.city],
-    ["Alunos", lead.currentStudentsRange],
-    ["Unidades", lead.unitsRange ?? "Não informado"],
-    ["Desafio", lead.mainChallenge],
-    ["Mensagem", lead.message ?? "Não informada"],
-    ["Origem", lead.source ?? "Não informada"],
-    ["Campanha", lead.campaign ?? "Não informada"],
-  ];
-
-  return `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
-      <h2>Novo pedido de demonstração Noogym</h2>
-      <table cellpadding="8" cellspacing="0" style="border-collapse: collapse;">
-        ${rows
-          .map(
-            ([label, value]) => `
-              <tr>
-                <td style="font-weight: 700; border-bottom: 1px solid #e5e7eb;">${escapeHtml(label)}</td>
-                <td style="border-bottom: 1px solid #e5e7eb;">${escapeHtml(value)}</td>
-              </tr>
-            `,
-          )
-          .join("")}
-      </table>
-    </div>
-  `;
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 }

@@ -17,6 +17,11 @@ export function validateEnv(config: Record<string, unknown>) {
   const resendApiKey = readString(config.RESEND_API_KEY);
   const resendFrom = readString(config.RESEND_FROM);
   const resendEndpoint = readString(config.RESEND_ENDPOINT) ?? "https://api.resend.com/emails";
+  const emailLogoUrl = readString(config.EMAIL_LOGO_URL);
+  const emailSiteUrl = readString(config.EMAIL_SITE_URL) ?? "https://noogym.com";
+  const emailSupportUrl = readString(config.EMAIL_SUPPORT_URL) ?? `${emailSiteUrl}/suporte`;
+  const emailPrivacyUrl = readString(config.EMAIL_PRIVACY_URL) ?? `${emailSiteUrl}/privacidade`;
+  const emailTermsUrl = readString(config.EMAIL_TERMS_URL) ?? `${emailSiteUrl}/termos`;
   const turnstileSecretKey = readString(config.TURNSTILE_SECRET_KEY);
   const googleMapsApiKey = readString(config.GOOGLE_MAPS_API_KEY);
   const authTokenSecret = readString(config.AUTH_TOKEN_SECRET);
@@ -59,6 +64,11 @@ export function validateEnv(config: Record<string, unknown>) {
     RESEND_API_KEY: resendApiKey,
     RESEND_FROM: resendFrom,
     RESEND_ENDPOINT: resendEndpoint,
+    EMAIL_LOGO_URL: emailLogoUrl,
+    EMAIL_SITE_URL: emailSiteUrl,
+    EMAIL_SUPPORT_URL: emailSupportUrl,
+    EMAIL_PRIVACY_URL: emailPrivacyUrl,
+    EMAIL_TERMS_URL: emailTermsUrl,
     TURNSTILE_SECRET_KEY: turnstileSecretKey,
     GOOGLE_MAPS_API_KEY: googleMapsApiKey,
     AUTH_TOKEN_SECRET: authTokenSecret,

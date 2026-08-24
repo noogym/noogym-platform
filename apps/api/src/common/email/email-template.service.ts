@@ -45,7 +45,7 @@ export class EmailTemplateService {
       `${siteUrl}/termos`,
     );
     const logoUrl =
-      this.optionalConfig('EMAIL_LOGO_URL') ??
+      this.optionalUrlConfig('EMAIL_LOGO_URL') ??
       `${this.config
         .get<string>('PASSWORD_RESET_BASE_URL', 'http://localhost:3000')
         .replace(/\/+$/, '')}/noogym-email-logo.png`;
@@ -107,7 +107,7 @@ export class EmailTemplateService {
               <td style="padding:0 16px 18px;color:#d9d9d9;font-size:14px;">
                 <span style="color:#b6ff00;font-weight:800;">Noogym</span>
                 <span style="color:#555555;padding:0 12px;">|</span>
-                <span>O fitness conectado.</span>
+                <span>A tecnologia que move o fitness.</span>
               </td>
             </tr>
             <tr>
@@ -142,7 +142,7 @@ export class EmailTemplateService {
                   <tr>
                     <td align="center" style="padding:30px 30px 10px;border-top:1px solid #b6ff00;">
                       <div style="color:#ffffff;font-size:13px;font-weight:900;letter-spacing:.42em;text-indent:.42em;">NOOGYM</div>
-                      <p style="margin:10px 0 22px;color:#a5a5a5;font-size:14px;">O fitness conectado.</p>
+                      <p style="margin:10px 0 22px;color:#a5a5a5;font-size:14px;">A tecnologia que move o fitness.</p>
                       <p style="margin:0 0 22px;color:#b6ff00;font-size:13px;">
                         <a href="${this.escapeHtml(siteUrl)}" style="color:#b6ff00;text-decoration:none;">Site Oficial</a>
                         <span style="color:#555555;padding:0 10px;">|</span>
@@ -178,5 +178,13 @@ export class EmailTemplateService {
   private optionalConfig(key: string) {
     const value = this.config.get<string>(key)?.trim();
     return value || undefined;
+  }
+
+  private optionalUrlConfig(key: string) {
+    const value = this.optionalConfig(key);
+    if (!value) return undefined;
+
+    const markdownLink = value.match(/^\[https?:\/\/[^\]]+\]\((https?:\/\/[^)]+)\)$/);
+    return markdownLink?.[1] ?? value;
   }
 }

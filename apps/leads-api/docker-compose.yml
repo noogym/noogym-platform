@@ -45,6 +45,11 @@ services:
       RESEND_API_KEY: ${API_RESEND_API_KEY:-}
       RESEND_FROM: ${API_RESEND_FROM:-}
       RESEND_ENDPOINT: ${API_RESEND_ENDPOINT:-https://api.resend.com/emails}
+      EMAIL_LOGO_URL: ${API_EMAIL_LOGO_URL:-}
+      EMAIL_SITE_URL: ${API_EMAIL_SITE_URL:-https://noogym.com}
+      EMAIL_SUPPORT_URL: ${API_EMAIL_SUPPORT_URL:-https://noogym.com/suporte}
+      EMAIL_PRIVACY_URL: ${API_EMAIL_PRIVACY_URL:-https://noogym.com/privacidade}
+      EMAIL_TERMS_URL: ${API_EMAIL_TERMS_URL:-https://noogym.com/termos}
       TURNSTILE_SECRET_KEY: ${API_TURNSTILE_SECRET_KEY:-}
       GOOGLE_MAPS_API_KEY: ${API_GOOGLE_MAPS_API_KEY:-}
     ports:
