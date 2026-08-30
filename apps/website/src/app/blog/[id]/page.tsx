@@ -259,6 +259,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                   <span className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2"><User className="h-4 w-4 text-limebrand" /> {article.author}</span>
                   <span className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2"><CalendarDays className="h-4 w-4 text-limebrand" /> {article.date}</span>
                   <span className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2"><Clock className="h-4 w-4 text-limebrand" /> {article.readTime} de leitura</span>
+                  {article.city ? <span className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2">{article.city}, {article.province ?? "Angola"}</span> : null}
                 </div>
               </div>
 
@@ -282,6 +283,17 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                   </div>
                 </div>
               </div>
+
+              {article.sourceName ? (
+                <div className="mt-5 rounded-lg border border-white/12 bg-white/[0.035] p-5 text-sm leading-6 text-white/62">
+                  <p className="font-bold text-white">Fonte e atribuicao</p>
+                  <p className="mt-2">
+                    Conteudo editorial Noogym baseado em informacao factual de {article.sourceName}
+                    {article.sourcePublishedAt ? `, publicada originalmente em ${article.sourcePublishedAt}` : ""}.
+                    {article.sourceUrl ? " O texto nao reproduz integralmente a fonte externa." : ""}
+                  </p>
+                </div>
+              ) : null}
 
               <div className="mt-8 space-y-10">
                 {body.sections.map((section, index) => (
