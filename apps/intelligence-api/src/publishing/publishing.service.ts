@@ -36,9 +36,10 @@ export class PublishingService {
       draft: content.draft,
     };
 
-    const publication = await this.prisma.publication.create({
-      data: { contentId, target: "blog", payload, status: "READY_TO_PUBLISH" },
-    });
+    const existing = await this.prisma.publication.findFirst({ where: { contentId, target: "blog" } });
+    const publication = existing
+      ? await this.prisma.publication.update({ where: { id: existing.id }, data: { payload, status: "READY_TO_PUBLISH" } })
+      : await this.prisma.publication.create({ data: { contentId, target: "blog", payload, status: "READY_TO_PUBLISH" } });
 
     await this.prisma.content.update({ where: { id: contentId }, data: { editorialStatus: "READY_TO_PUBLISH" } });
     return publication;
@@ -55,24 +56,28 @@ export class PublishingService {
       throw new BadRequestException("Evento precisa de aprovacao editorial antes de preparar publicacao.");
     }
 
-    const publication = await this.prisma.publication.create({
-      data: {
-        eventCandidateId,
-        target: "events",
-        status: "READY_TO_PUBLISH",
-        payload: {
-          title: event.name,
-          category: event.category,
-          date: event.startDate,
-          city: event.city,
-          province: event.province,
-          organizer: event.organizer,
-          origin: event.origin,
-          sourceUrl: event.sourceUrl,
-          registrationUrl: event.registrationUrl,
-        },
-      },
-    });
+    const payload = {
+      title: event.name,
+      category: event.category,
+      date: event.startDate,
+      city: event.city,
+      province: event.province,
+      organizer: event.organizer,
+      origin: event.origin,
+      sourceUrl: event.sourceUrl,
+      registrationUrl: event.registrationUrl,
+    };
+    const existing = await this.prisma.publication.findFirst({ where: { eventCandidateId, target: "events" } });
+    const publication = existing
+      ? await this.prisma.publication.update({ where: { id: existing.id }, data: { payload, status: "READY_TO_PUBLISH" } })
+      : await this.prisma.publication.create({
+          data: {
+            eventCandidateId,
+            target: "events",
+            status: "READY_TO_PUBLISH",
+            payload,
+          },
+        });
 
     await this.prisma.eventCandidate.update({ where: { id: eventCandidateId }, data: { editorialStatus: "READY_TO_PUBLISH" } });
     return publication;

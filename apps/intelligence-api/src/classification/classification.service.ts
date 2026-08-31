@@ -78,7 +78,7 @@ export class ClassificationService {
     };
   }
 
-  private categoryFor(haystack: string) {
+  private categoryFor(haystack: string): { name: string; terms: string[] } {
     let best = { name: "comunidade", score: 0, terms: [] as string[] };
 
     for (const category of categories) {
@@ -89,7 +89,7 @@ export class ClassificationService {
       }
     }
 
-    return best.name;
+    return { name: best.name, terms: best.terms };
   }
 
   private contentTypeFor(haystack: string): ClassificationResult["contentType"] {

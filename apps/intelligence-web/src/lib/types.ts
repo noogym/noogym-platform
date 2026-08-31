@@ -8,6 +8,8 @@ export type DashboardMetrics = {
   approved: number;
   rejected: number;
   failedJobs: number;
+  pipeline?: Record<string, number>;
+  recentJobs?: CrawlJob[];
 };
 
 export type Source = {
@@ -20,6 +22,9 @@ export type Source = {
   enabled: boolean;
   updateFrequency: string;
   lastSuccessfulCheckAt?: string | null;
+  crawlDelayMs?: number;
+  contentSelector?: string | null;
+  titleSelector?: string | null;
 };
 
 export type ContentItem = {
@@ -32,10 +37,22 @@ export type ContentItem = {
   trustScore?: number;
   editorialStatus: string;
   duplicateStatus: string;
+  duplicateReason?: string | null;
+  scoreExplanation?: {
+    matchedCategoryTerms?: string[];
+    matchedLocation?: string;
+    sourceTrustScore?: number;
+    formula?: string;
+  } | null;
   city?: string | null;
   province?: string | null;
   summary?: string | null;
+  cleanText?: string;
+  draft?: unknown;
+  socialDraft?: unknown;
   rawContent?: {
+    canonicalUrl?: string | null;
+    rawText?: string;
     source?: Source;
   };
 };
@@ -52,15 +69,22 @@ export type EventCandidate = {
   editorialStatus: string;
   verificationStatus: string;
   duplicateStatus: string;
+  duplicateReason?: string | null;
   startDate?: string | null;
+  description?: string | null;
+  sourceUrl?: string | null;
 };
 
 export type CrawlJob = {
   id: string;
   name: string;
   sourceId?: string | null;
+  jobType?: string;
   status: string;
   attempts: number;
+  discoveredCount?: number;
+  processedCount?: number;
   error?: string | null;
   createdAt: string;
+  finishedAt?: string | null;
 };

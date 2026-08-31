@@ -6,6 +6,16 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import { IngestRawContentDto } from "../content/dto/ingest-raw-content.dto";
 
+type FetchedContent = {
+  externalId: string;
+  canonicalUrl: string;
+  title: string;
+  text: string;
+  html: string;
+  publishedAt?: string;
+  acquisition: string;
+};
+
 @Injectable()
 export class IngestionService {
   constructor(
@@ -156,7 +166,7 @@ export class IngestionService {
     sourceType: string;
     contentSelector?: string | null;
     titleSelector?: string | null;
-  }) {
+  }): Promise<FetchedContent[]> {
     const { url } = source;
 
     if (url.startsWith("fixture://")) {

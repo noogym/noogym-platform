@@ -31,7 +31,7 @@ export class DeduplicationService {
     const sameDate = Boolean(a.startDate && b.startDate && this.dateOnly(a.startDate) === this.dateOnly(b.startDate));
     const confidence = Math.round(titleScore * 70 + (samePlace ? 15 : 0) + (sameDate ? 15 : 0));
 
-    if (confidence >= 88) {
+    if (confidence >= 84) {
       return { status: "possible_duplicate" as const, confidence, reason: "title_place_date" };
     }
 
@@ -39,9 +39,9 @@ export class DeduplicationService {
   }
 
   titleSimilarity(a: string, b: string) {
-    const aTokens = this.tokens(a);
-    const bTokens = this.tokens(b);
-    const intersection = aTokens.filter((token) => bTokens.includes(token));
+    const aTokens = new Set(this.tokens(a));
+    const bTokens = new Set(this.tokens(b));
+    const intersection = [...aTokens].filter((token) => bTokens.has(token));
     const union = new Set([...aTokens, ...bTokens]);
 
     if (union.size === 0) {

@@ -1,4 +1,39 @@
 {
-  "articles": [],
-  "events": []
+  "articles": [
+    {
+      "id": "fitness-run-benguela-edicao-2026",
+      "title": "Fitness Run Benguela edição 2026",
+      "category": "Atualidade",
+      "contentType": "community",
+      "date": "31/08/2026",
+      "readTime": "1 min",
+      "image": "/assets/blog-reference.png",
+      "summary": "Fitness Run Benguela edição 2026\nFitness Run Benguela edição 2026\nA Running Angola confirmou uma corrida comunitária em Benguela, Angola, para 2026-09-12.",
+      "author": "Redacao Noogym",
+      "city": "Benguela",
+      "province": "Benguela",
+      "sourceName": "Running Angola",
+      "sourceUrl": "fixture://running-angola",
+      "verificationStatus": "approved"
+    }
+  ],
+  "events": [
+    {
+      "id": "cmtgfbnqb000dpspcbz33m4iq",
+      "title": "Campeonato Nacional de Bodybuilding anunciado em Luanda",
+      "category": "Bodybuilding",
+      "date": "31/08/2026",
+      "time": "A confirmar",
+      "location": "Luanda",
+      "city": "Luanda",
+      "province": "Luanda",
+      "origin": "external",
+      "organizer": "Federação Fitness Angola",
+      "status": "approved",
+      "sourceName": "Fonte externa",
+      "participants": 0,
+      "image": "/assets/events-reference.png",
+      "description": "Campeonato Nacional de Bodybuilding anunciado em Luanda\nCampeonato Nacional de Bodybuilding anunciado em Luanda\nA Federação Fitness Angola anunciou um campeonato de bodybuilding em Luanda para atletas federados e conv..."
+    }
+  ]
 }

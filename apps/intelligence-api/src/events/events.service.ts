@@ -91,11 +91,15 @@ export class EventsService {
   async detectFromContent(contentId: string) {
     const content = await this.prisma.content.findUnique({
       where: { id: contentId },
-      include: { rawContent: { include: { source: true } } },
+      include: { eventCandidate: true, rawContent: { include: { source: true } } },
     });
 
     if (!content) {
       throw new NotFoundException("Conteudo nao encontrado.");
+    }
+
+    if (content.eventCandidate) {
+      return this.detectDuplicates(content.eventCandidate.id);
     }
 
     const text = `${content.title}\n${content.cleanText}`;

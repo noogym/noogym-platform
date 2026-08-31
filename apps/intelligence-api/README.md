@@ -5,13 +5,15 @@ Backend NestJS para descoberta, normalizacao, classificacao, revisao editorial e
 ## O que inclui
 
 - Fontes configuraveis (`sources`) com crawling manual.
-- Ingestao etica com `User-Agent`, timeout, leitura de `robots.txt` e suporte a fixtures locais `fixture://`.
+- Ingestao etica com `User-Agent`, timeout, leitura de `robots.txt`, rate limit por fonte, RSS, sitemap e suporte a fixtures locais `fixture://`.
 - Normalizacao de HTML, resumo curto e extracao de texto sem copiar artigos completos.
 - Classificacao deterministica por relevancia fitness/Angola e categorias editoriais.
 - Extracao simples de entidades e locais.
 - Dedupe por URL, `externalId`, hash e similaridade de titulo/local/data.
+- Score explicavel com termos detectados, local inferido e formula usada.
 - Eventos candidatos, submissao publica e workflow de revisao.
 - Publicacoes preparadas para Blog/Eventos, sem escrita automatica no website.
+- Export controlado de publicacoes prontas para `apps/website/src/data/generated/intelligence-publications.json`.
 - Auditoria de acoes e endpoints de dashboard/health.
 
 ## Comandos
@@ -60,6 +62,14 @@ Neste workspace, a validacao local usou Postgres em `127.0.0.1:5433` porque a po
 
 Todos os endpoints, exceto `/health`, exigem o header `x-api-key`.
 
+## Estados editoriais
+
+```text
+INGESTED -> NORMALIZED -> CLASSIFIED -> REVIEW_REQUIRED -> APPROVED -> READY_TO_PUBLISH -> SCHEDULED -> PUBLISHED
+```
+
+Itens rejeitados ou duplicados saem do fluxo principal como `REJECTED` ou `DUPLICATE`.
+
 ## Limites atuais
 
-O produto esta em modo MVP operacional. A classificacao e a extracao sao deterministicas, o agendamento recorrente de jobs ainda e acionado manualmente, e a publicacao no website e preparada como payload revisavel em vez de atualizar automaticamente os dados estaticos do `apps/website`.
+O produto esta em modo MVP operacional. A classificacao e a extracao sao deterministicas, o agendamento recorrente de jobs ainda e acionado manualmente, e a publicacao no website e exportada como JSON versionavel para revisao/commit.

@@ -5,10 +5,15 @@ Painel Next.js para operar a Noogym Fitness Intelligence: acompanhar fontes, con
 ## O que inclui
 
 - Dashboard operacional com metricas e filas editoriais.
+- Funil editorial por etapa.
+- Filtros por texto, status e provincia.
+- Detalhe/preview de conteudos e eventos.
+- Acoes editoriais individuais e aprovacao em lote.
 - Gestao de fontes e crawl manual.
 - Lista de conteudos com classificacao, score, status e acoes editoriais.
 - Eventos candidatos e status de verificacao.
 - Proxy server-side em `/api/intelligence/*` para nao expor `INTELLIGENCE_API_KEY` no browser.
+- Exportacao controlada de dados prontos para o website.
 - Fallback para dados demo quando a API esta indisponivel.
 
 ## Comandos

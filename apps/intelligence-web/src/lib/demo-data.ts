@@ -10,6 +10,16 @@ export const demoMetrics: DashboardMetrics = {
   approved: 1,
   rejected: 0,
   failedJobs: 0,
+  pipeline: {
+    INGESTED: 0,
+    NORMALIZED: 0,
+    CLASSIFIED: 1,
+    REVIEW_REQUIRED: 2,
+    APPROVED: 1,
+    READY_TO_PUBLISH: 0,
+    SCHEDULED: 0,
+    PUBLISHED: 0,
+  },
 };
 
 export const demoSources: Source[] = [
