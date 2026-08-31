@@ -25,7 +25,7 @@ export class ContentController {
   @Get("raw")
   raw() {
     return this.prisma.rawContent.findMany({
-      include: { source: true, content: true },
+      include: { source: true, content: { include: { eventCandidate: true } } },
       orderBy: { fetchedAt: "desc" },
       take: 100,
     });

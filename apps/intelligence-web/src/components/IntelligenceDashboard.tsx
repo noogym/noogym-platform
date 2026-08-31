@@ -21,10 +21,10 @@ import {
   Timer,
   XCircle,
 } from "lucide-react";
-import { demoContents, demoEvents, demoJobs, demoMetrics, demoSources } from "@/lib/demo-data";
-import type { ContentItem, CrawlJob, DashboardMetrics, EventCandidate, Source } from "@/lib/types";
+import { demoContents, demoEvents, demoJobs, demoMetrics, demoRawCaptures, demoSources } from "@/lib/demo-data";
+import type { ContentItem, CrawlJob, DashboardMetrics, EventCandidate, RawCapture, Source } from "@/lib/types";
 
-type Tab = "dashboard" | "sources" | "content" | "events" | "review" | "jobs" | "settings";
+type Tab = "dashboard" | "sources" | "captures" | "content" | "events" | "review" | "jobs" | "settings";
 type ApiState = "loading" | "online" | "demo";
 
 const workflow = ["INGESTED", "NORMALIZED", "CLASSIFIED", "REVIEW_REQUIRED", "APPROVED", "READY_TO_PUBLISH", "SCHEDULED", "PUBLISHED"];
@@ -33,6 +33,7 @@ const reviewStatuses = ["REVIEW_REQUIRED", "CLASSIFIED", "DRAFT_GENERATED", "DUP
 const tabs: Array<{ id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { id: "dashboard", label: "Dashboard", icon: Gauge },
   { id: "sources", label: "Fontes", icon: Database },
+  { id: "captures", label: "Capturas", icon: Archive },
   { id: "content", label: "Conteudos", icon: FileText },
   { id: "events", label: "Eventos", icon: Activity },
   { id: "review", label: "Revisao", icon: ShieldCheck },
@@ -44,6 +45,7 @@ export function IntelligenceDashboard() {
   const [active, setActive] = useState<Tab>("dashboard");
   const [metrics, setMetrics] = useState<DashboardMetrics>(demoMetrics);
   const [sources, setSources] = useState<Source[]>(demoSources);
+  const [rawCaptures, setRawCaptures] = useState<RawCapture[]>(demoRawCaptures);
   const [contents, setContents] = useState<ContentItem[]>(demoContents);
   const [events, setEvents] = useState<EventCandidate[]>(demoEvents);
   const [jobs, setJobs] = useState<CrawlJob[]>(demoJobs);
@@ -55,6 +57,7 @@ export function IntelligenceDashboard() {
   const [province, setProvince] = useState("all");
   const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
+  const [selectedRawId, setSelectedRawId] = useState<string | null>(null);
   const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -66,9 +69,10 @@ export function IntelligenceDashboard() {
   async function loadData() {
     setApiState("loading");
     try {
-      const [dashboardRes, sourcesRes, contentRes, eventsRes, jobsRes] = await Promise.all([
+      const [dashboardRes, sourcesRes, rawRes, contentRes, eventsRes, jobsRes] = await Promise.all([
         api<DashboardMetrics>("dashboard"),
         api<Source[]>("sources"),
+        api<RawCapture[]>("content/raw"),
         api<ContentItem[]>("content"),
         api<EventCandidate[]>("events"),
         api<CrawlJob[]>("jobs"),
@@ -76,6 +80,7 @@ export function IntelligenceDashboard() {
 
       setMetrics(dashboardRes);
       setSources(sourcesRes);
+      setRawCaptures(rawRes);
       setContents(contentRes);
       setEvents(eventsRes);
       setJobs(jobsRes);
@@ -83,6 +88,7 @@ export function IntelligenceDashboard() {
     } catch {
       setMetrics(demoMetrics);
       setSources(demoSources);
+      setRawCaptures(demoRawCaptures);
       setContents(demoContents);
       setEvents(demoEvents);
       setJobs(demoJobs);
@@ -132,6 +138,18 @@ export function IntelligenceDashboard() {
     });
   }
 
+  async function processRawCapture(rawId: string) {
+    await runAction(rawId, async () => {
+      const result = await api<{ classified?: ContentItem; deduped?: ContentItem; draft?: ContentItem }>(`content/raw/${rawId}/process`, { method: "POST" });
+      const content = result.draft ?? result.deduped ?? result.classified;
+      if (content?.contentType === "event") {
+        await api(`events/detect/${content.id}`, { method: "POST" });
+      }
+      await loadData();
+      setNotice("Captura processada.");
+    });
+  }
+
   async function review(path: string, id: string, message: string) {
     await runAction(id, async () => {
       await api(path, {
@@ -175,10 +193,12 @@ export function IntelligenceDashboard() {
   }
 
   const provinces = useMemo(() => unique([...contents.map((item) => item.province), ...events.map((item) => item.province)].filter(Boolean) as string[]), [contents, events]);
+  const filteredRawCaptures = useMemo(() => filterRawCaptures(rawCaptures, query, contentStatus, eventStatus, province), [rawCaptures, query, contentStatus, eventStatus, province]);
   const filteredContents = useMemo(() => filterContents(contents, query, contentStatus, province), [contents, query, contentStatus, province]);
   const filteredEvents = useMemo(() => filterEvents(events, query, eventStatus, province), [events, query, eventStatus, province]);
   const selectedContent = contents.find((item) => item.id === selectedContentId) ?? filteredContents[0];
   const selectedEvent = events.find((item) => item.id === selectedEventId) ?? filteredEvents[0];
+  const selectedRaw = rawCaptures.find((item) => item.id === selectedRawId) ?? filteredRawCaptures[0];
   const reviewItems = filteredContents.filter((item) => reviewStatuses.includes(item.editorialStatus));
   const reviewEvents = filteredEvents.filter((item) => reviewStatuses.includes(item.editorialStatus));
 
@@ -224,6 +244,7 @@ export function IntelligenceDashboard() {
 
           {active === "dashboard" ? <DashboardView metrics={metrics} sources={sources} contents={contents} events={events} jobs={jobs} onRunAll={runAllSources} busyId={busyId} /> : null}
           {active === "sources" ? <SourcesView busyId={busyId} sources={sources} onCreate={createSource} onRun={runSource} onRunAll={runAllSources} /> : null}
+          {active === "captures" ? <CapturesView busyId={busyId} captures={filteredRawCaptures} selectedId={selectedRaw?.id ?? null} onSelect={setSelectedRawId} onProcess={processRawCapture} /> : null}
           {active === "content" ? <ContentView contents={filteredContents} selectedId={selectedContentId} selectedIds={selectedContentIds} onSelect={setSelectedContentId} onToggle={(id) => toggle(id, selectedContentIds, setSelectedContentIds)} /> : null}
           {active === "events" ? <EventsView events={filteredEvents} selectedId={selectedEventId} selectedIds={selectedEventIds} onSelect={setSelectedEventId} onToggle={(id) => toggle(id, selectedEventIds, setSelectedEventIds)} /> : null}
           {active === "review" ? <ReviewView busyId={busyId} content={selectedContent} event={selectedEvent} contentCount={reviewItems.length} eventCount={reviewEvents.length} selectedCount={selectedContentIds.length + selectedEventIds.length} onBulkApprove={bulkApprove} onReview={review} /> : null}
@@ -312,6 +333,30 @@ function SourcesView({ busyId, sources, onCreate, onRun, onRunAll }: { busyId: s
           ])}
         />
       </Panel>
+    </div>
+  );
+}
+
+function CapturesView({ busyId, captures, selectedId, onSelect, onProcess }: { busyId: string | null; captures: RawCapture[]; selectedId: string | null; onSelect: (id: string) => void; onProcess: (rawId: string) => Promise<void> }) {
+  const selected = captures.find((item) => item.id === selectedId) ?? captures[0];
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-[1fr_480px]">
+      <Panel title="Capturas do crawler">
+        <DataTable
+          headers={["Titulo capturado", "Fonte", "Bruto", "Formato", "Status editorial", "Capturado", "Acao"]}
+          rows={captures.map((item) => [
+            <button key={item.id} onClick={() => onSelect(item.id)} className={`text-left font-semibold ${selected?.id === item.id ? "text-limebrand" : "text-white/80"}`}>{item.title}</button>,
+            item.source?.name ?? "-",
+            <StatusBadge key={`${item.id}-raw-status`} status={item.status} />,
+            captureFormat(item),
+            item.content ? <StatusBadge key={`${item.id}-content-status`} status={item.content.editorialStatus} /> : "-",
+            new Date(item.fetchedAt).toLocaleString("pt-AO"),
+            <IconButton key={`${item.id}-process`} label="Processar" icon={Sparkles} busy={busyId === item.id} onClick={() => void onProcess(item.id)} />,
+          ])}
+        />
+      </Panel>
+      <CaptureDetail capture={selected} />
     </div>
   );
 }
@@ -427,6 +472,67 @@ function Filters({ query, onQuery, contentStatus, onContentStatus, eventStatus, 
       <Select value={eventStatus} onChange={onEventStatus} options={["all", ...workflow, "REJECTED", "DUPLICATE"]} icon={Activity} />
       <Select value={province} onChange={onProvince} options={["all", ...provinces]} icon={Database} />
     </div>
+  );
+}
+
+function CaptureDetail({ capture }: { capture?: RawCapture }) {
+  if (!capture) return <Panel title="Preview da captura"><Empty text="Sem captura selecionada." /></Panel>;
+
+  const content = capture.content;
+  const event = content?.eventCandidate;
+
+  return (
+    <Panel title="Original, noticia e evento">
+      <div className="grid gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase text-limebrand">{capture.source?.name ?? "Fonte desconhecida"}</p>
+          <h3 className="mt-2 text-xl font-black">{capture.title}</h3>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <StatusBadge status={capture.status} />
+            <span className="rounded-md border border-white/10 bg-black/20 px-2 py-1 text-xs font-bold text-white/55">{captureFormat(capture)}</span>
+          </div>
+        </div>
+
+        <PanelMini title="Texto original capturado">
+          <p className="break-all text-xs text-white/42">{capture.canonicalUrl ?? "Sem URL canonica."}</p>
+          <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap text-xs leading-5 text-white/68">{capture.rawText}</pre>
+        </PanelMini>
+
+        <PanelMini title="Como noticia/conteudo">
+          {content ? (
+            <div className="grid gap-2">
+              <p className="text-base font-black text-white">{content.title}</p>
+              <p>{content.summary ?? "Sem resumo editorial."}</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Info label="Tipo" value={content.contentType} />
+                <Info label="Categoria" value={content.category ?? "-"} />
+                <Info label="Score" value={content.relevanceScore} />
+                <Info label="Status" value={content.editorialStatus.replace(/_/g, " ")} />
+              </div>
+            </div>
+          ) : (
+            <Empty text="Esta captura ainda nao foi normalizada/classificada." />
+          )}
+        </PanelMini>
+
+        <PanelMini title="Como evento">
+          {event ? (
+            <div className="grid gap-2">
+              <p className="text-base font-black text-white">{event.name}</p>
+              <p>{event.description ?? "Sem descricao."}</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Info label="Organizador" value={event.organizer ?? "-"} />
+                <Info label="Data" value={event.startDate ? new Date(event.startDate).toLocaleDateString("pt-AO") : "-"} />
+                <Info label="Local" value={[event.city, event.province].filter(Boolean).join(", ") || "-"} />
+                <Info label="Status" value={event.editorialStatus.replace(/_/g, " ")} />
+              </div>
+            </div>
+          ) : (
+            <Empty text={content?.contentType === "event" ? "Conteudo parece evento, mas ainda nao gerou candidato." : "Esta captura nao foi classificada como evento."} />
+          )}
+        </PanelMini>
+      </div>
+    </Panel>
   );
 }
 
@@ -602,6 +708,23 @@ function Empty({ text }: { text: string }) {
   return <p className="rounded-md border border-dashed border-white/12 p-5 text-sm text-white/45">{text}</p>;
 }
 
+function filterRawCaptures(items: RawCapture[], query: string, contentStatus: string, eventStatus: string, province: string) {
+  const q = query.trim().toLowerCase();
+  return items.filter((item) => {
+    const content = item.content;
+    const event = content?.eventCandidate;
+    const matchesQuery =
+      !q ||
+      [item.title, item.rawText, item.source?.name, content?.title, content?.summary, content?.category, event?.name, event?.organizer, event?.description]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(q));
+    const matchesContentStatus = contentStatus === "all" || item.status === contentStatus.toLowerCase() || content?.editorialStatus === contentStatus;
+    const matchesEventStatus = eventStatus === "all" || event?.editorialStatus === eventStatus;
+    const matchesProvince = province === "all" || content?.province === province || event?.province === province || item.source?.province === province;
+    return matchesQuery && matchesContentStatus && matchesEventStatus && matchesProvince;
+  });
+}
+
 function filterContents(items: ContentItem[], query: string, status: string, province: string) {
   const q = query.trim().toLowerCase();
   return items.filter((item) => {
@@ -632,6 +755,15 @@ function unique(values: string[]) {
 
 function emptyToUndefined(value: FormDataEntryValue | null) {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function captureFormat(capture: RawCapture) {
+  if (capture.content?.eventCandidate) return "Evento";
+  if (capture.content?.contentType === "event") return "Evento provavel";
+  if (capture.content?.contentType === "news") return "Noticia";
+  if (capture.content?.contentType === "article") return "Artigo";
+  if (capture.content?.contentType && capture.content.contentType !== "unknown") return capture.content.contentType;
+  return "Por processar";
 }
 
 function stringifyDraft(value: unknown) {

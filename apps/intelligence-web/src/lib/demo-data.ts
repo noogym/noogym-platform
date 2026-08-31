@@ -1,4 +1,4 @@
-import type { ContentItem, CrawlJob, DashboardMetrics, EventCandidate, Source } from "./types";
+import type { ContentItem, CrawlJob, DashboardMetrics, EventCandidate, RawCapture, Source } from "./types";
 
 export const demoMetrics: DashboardMetrics = {
   sources: 3,
@@ -39,4 +39,26 @@ export const demoEvents: EventCandidate[] = [
 
 export const demoJobs: CrawlJob[] = [
   { id: "job-1", name: "crawlSource", sourceId: "seed-running-angola", status: "completed", attempts: 1, createdAt: new Date().toISOString() },
+];
+
+export const demoRawCaptures: RawCapture[] = [
+  {
+    id: "raw-1",
+    title: "Campeonato Nacional de Bodybuilding anunciado em Luanda",
+    rawText: "A federacao anunciou uma competicao nacional de bodybuilding em Luanda, com inscricoes abertas para atletas e equipas tecnicas.",
+    canonicalUrl: "fixture://federacao-fitness-angola/campeonato-bodybuilding",
+    discoveredAt: new Date().toISOString(),
+    fetchedAt: new Date().toISOString(),
+    status: "normalized",
+    source: demoSources[0],
+    content: {
+      ...demoContents[0],
+      eventCandidate: {
+        ...demoEvents[0],
+        name: "Campeonato Nacional de Bodybuilding anunciado em Luanda",
+        city: "Luanda",
+        province: "Luanda",
+      },
+    },
+  },
 ];

@@ -21,6 +21,8 @@ export type Source = {
   status: string;
   enabled: boolean;
   updateFrequency: string;
+  province?: string | null;
+  city?: string | null;
   lastSuccessfulCheckAt?: string | null;
   crawlDelayMs?: number;
   contentSelector?: string | null;
@@ -29,6 +31,7 @@ export type Source = {
 
 export type ContentItem = {
   id: string;
+  rawContentId?: string;
   title: string;
   contentType: string;
   category?: string | null;
@@ -55,10 +58,12 @@ export type ContentItem = {
     rawText?: string;
     source?: Source;
   };
+  eventCandidate?: EventCandidate | null;
 };
 
 export type EventCandidate = {
   id: string;
+  contentId?: string | null;
   name: string;
   category?: string | null;
   city?: string | null;
@@ -73,6 +78,21 @@ export type EventCandidate = {
   startDate?: string | null;
   description?: string | null;
   sourceUrl?: string | null;
+};
+
+export type RawCapture = {
+  id: string;
+  title: string;
+  rawText: string;
+  rawHtml?: string | null;
+  canonicalUrl?: string | null;
+  author?: string | null;
+  publishedAt?: string | null;
+  discoveredAt: string;
+  fetchedAt: string;
+  status: string;
+  source?: Source;
+  content?: ContentItem | null;
 };
 
 export type CrawlJob = {
