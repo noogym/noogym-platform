@@ -92,7 +92,10 @@ export class PaymentsService {
       );
     }
 
-    const paidAt = dto.status === PaymentStatus.PAID ? (dto.paidAt ?? new Date()) : undefined;
+    const paidAt =
+      dto.status === PaymentStatus.PAID
+        ? (dto.paidAt ?? new Date())
+        : undefined;
     const { subscriptionPlanDurationDays, ...paymentRelationData } =
       relationData;
 

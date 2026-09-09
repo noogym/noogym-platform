@@ -53,7 +53,7 @@ export class ExpensesService {
       data: {
         ...dto,
         organizationId,
-        paidAt: dto.status === 'PAID' ? dto.paidAt ?? new Date() : dto.paidAt,
+        paidAt: dto.status === 'PAID' ? (dto.paidAt ?? new Date()) : dto.paidAt,
       },
     });
   }
@@ -65,7 +65,7 @@ export class ExpensesService {
       where: { id },
       data: {
         ...dto,
-        paidAt: dto.status === 'PAID' ? dto.paidAt ?? new Date() : dto.paidAt,
+        paidAt: dto.status === 'PAID' ? (dto.paidAt ?? new Date()) : dto.paidAt,
       },
     });
   }

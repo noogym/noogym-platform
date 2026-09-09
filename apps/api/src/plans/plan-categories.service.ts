@@ -57,11 +57,7 @@ export class PlanCategoriesService {
     });
   }
 
-  async update(
-    organizationId: string,
-    id: string,
-    dto: UpdatePlanCategoryDto,
-  ) {
+  async update(organizationId: string, id: string, dto: UpdatePlanCategoryDto) {
     const current = await this.ensureExists(organizationId, id);
     const name = dto.name?.trim();
     if (dto.name !== undefined && !name) {

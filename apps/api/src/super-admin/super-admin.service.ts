@@ -112,7 +112,11 @@ export class SuperAdminService {
   async sendPasswordReset(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true, name: true, organization: { select: { name: true } } },
+      select: {
+        email: true,
+        name: true,
+        organization: { select: { name: true } },
+      },
     });
 
     if (!user) throw new NotFoundException('User not found');

@@ -217,7 +217,10 @@ describe('SalesService', () => {
   it('creates subscription when a completed sale includes a plan', async () => {
     const { prisma, tx, service } = createService();
     const soldAt = new Date('2026-07-15T10:00:00.000Z');
-    prisma.member.findFirst.mockResolvedValue({ id: 'member-1', status: 'ACTIVE' });
+    prisma.member.findFirst.mockResolvedValue({
+      id: 'member-1',
+      status: 'ACTIVE',
+    });
     prisma.plan.findMany.mockResolvedValue([
       {
         id: 'plan-1',
@@ -290,7 +293,9 @@ describe('SalesService', () => {
       paymentMethod: PaymentMethod.CASH,
       type: SaleType.QUOTE,
       soldAt,
-      items: [{ productName: 'Personal trainer', quantity: 2, unitPrice: 12000 }],
+      items: [
+        { productName: 'Personal trainer', quantity: 2, unitPrice: 12000 },
+      ],
     });
 
     expect(tx.saleItem.deleteMany).toHaveBeenCalledWith({

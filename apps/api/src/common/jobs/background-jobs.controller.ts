@@ -1,10 +1,7 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Prisma, UserRole } from '@prisma/client';
-import {
-  AuthUser,
-  CurrentUser,
-} from '../decorators/current-user.decorator';
+import { AuthUser, CurrentUser } from '../decorators/current-user.decorator';
 import { Roles } from '../decorators/roles.decorator';
 import { PaginationQueryDto } from '../dto/pagination-query.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';

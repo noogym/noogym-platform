@@ -132,9 +132,7 @@ export class SalesService {
     if (total < 0)
       throw new BadRequestException('Sale total cannot be negative');
     const normalizedPayments =
-      status === SaleStatus.COMPLETED
-        ? this.normalizePayments(dto, total)
-        : [];
+      status === SaleStatus.COMPLETED ? this.normalizePayments(dto, total) : [];
     const paymentTotal = normalizedPayments.reduce(
       (sum, payment) => sum + payment.amount,
       0,
@@ -270,10 +268,16 @@ export class SalesService {
     }
 
     if (!dto.items?.length || !dto.paymentMethod) {
-      throw new BadRequestException('Sale items and payment method are required');
+      throw new BadRequestException(
+        'Sale items and payment method are required',
+      );
     }
 
-    await this.validateRelations(organizationId, sellerId, dto as CreateSaleDto);
+    await this.validateRelations(
+      organizationId,
+      sellerId,
+      dto as CreateSaleDto,
+    );
     const saleItems = await this.buildSaleItems(organizationId, dto.items);
     const subtotal = saleItems.reduce((sum, item) => sum + item.total, 0);
     const discountAmount = dto.discountAmount ?? 0;
@@ -438,7 +442,8 @@ export class SalesService {
         : plan
           ? Number(plan.price)
           : (item.unitPrice ?? 0);
-      const productName = product?.name ?? plan?.name ?? gymClass?.name ?? item.productName;
+      const productName =
+        product?.name ?? plan?.name ?? gymClass?.name ?? item.productName;
       if (!productName) {
         throw new BadRequestException('Sale item productName is required');
       }
@@ -455,7 +460,13 @@ export class SalesService {
         classId: gymClass?.id,
         kind:
           item.kind ??
-          (product ? 'product' : plan ? 'plan' : gymClass ? 'class' : 'service'),
+          (product
+            ? 'product'
+            : plan
+              ? 'plan'
+              : gymClass
+                ? 'class'
+                : 'service'),
         productName,
         sku: product?.sku ?? item.sku,
         quantity: item.quantity,

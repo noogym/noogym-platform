@@ -252,7 +252,8 @@ export class MembersService {
         (phone && this.normalizeDigits(member.phone) === phone) ||
         (documentNumber &&
           this.normalizeDocument(member.documentNumber) === documentNumber) ||
-        (accessCode && this.normalizeAccessCode(member.accessCode) === accessCode),
+        (accessCode &&
+          this.normalizeAccessCode(member.accessCode) === accessCode),
     );
 
     if (duplicate) {
@@ -280,9 +281,13 @@ export class MembersService {
     return value?.replace(/\s/g, '').toUpperCase() ?? '';
   }
 
-  private async ensureQrToken<T extends { id: string; qrToken?: string | null; accessCode?: string | null }>(
-    member: T,
-  ) {
+  private async ensureQrToken<
+    T extends {
+      id: string;
+      qrToken?: string | null;
+      accessCode?: string | null;
+    },
+  >(member: T) {
     if (member.qrToken && member.accessCode) return member;
 
     const updated = await this.prisma.member.update({

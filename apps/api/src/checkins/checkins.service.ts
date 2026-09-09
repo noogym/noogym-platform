@@ -149,7 +149,10 @@ export class CheckinsService {
       },
       include: { member: true, gym: true },
     });
-    void this.backgroundJobs.enqueueCheckinProcessed(organizationId, checkin.id);
+    void this.backgroundJobs.enqueueCheckinProcessed(
+      organizationId,
+      checkin.id,
+    );
 
     return checkin;
   }
@@ -300,7 +303,10 @@ export class CheckinsService {
       if (url.protocol === 'noogym:' && url.hostname === 'checkin') {
         return { memberId: parts[0], qrToken: parts[1] };
       }
-      if (url.protocol === 'noogym:' && ['barcode', 'card'].includes(url.hostname)) {
+      if (
+        url.protocol === 'noogym:' &&
+        ['barcode', 'card'].includes(url.hostname)
+      ) {
         return { accessCode: parts[0] };
       }
 

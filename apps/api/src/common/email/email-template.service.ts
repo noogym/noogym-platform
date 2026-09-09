@@ -184,7 +184,9 @@ export class EmailTemplateService {
     const value = this.optionalConfig(key);
     if (!value) return undefined;
 
-    const markdownLink = value.match(/^\[https?:\/\/[^\]]+\]\((https?:\/\/[^)]+)\)$/);
+    const markdownLink = value.match(
+      /^\[https?:\/\/[^\]]+\]\((https?:\/\/[^)]+)\)$/,
+    );
     return markdownLink?.[1] ?? value;
   }
 }
