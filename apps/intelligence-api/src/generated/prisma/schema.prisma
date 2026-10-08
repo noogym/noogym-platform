@@ -1,0 +1,359 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SourceType {
+  website
+  rss
+  api
+  federation
+  gym
+  eventOrganizer
+  media
+  blog
+  publicDirectory
+  socialOfficial
+  userSubmission
+  other
+}
+
+enum SourceStatus {
+  active
+  paused
+  error
+  archived
+}
+
+enum RawContentStatus {
+  discovered
+  ingested
+  normalized
+  failed
+  duplicate
+  blocked_by_robots
+  timeout
+  parse_failed
+}
+
+enum IntelligenceContentType {
+  article
+  news
+  event
+  announcement
+  profile
+  promotion
+  unknown
+}
+
+enum EditorialStatus {
+  DISCOVERED
+  INGESTED
+  NORMALIZED
+  CLASSIFIED
+  REVIEW_REQUIRED
+  APPROVED
+  DRAFT_GENERATED
+  READY_TO_PUBLISH
+  SCHEDULED
+  PUBLISHED
+  REJECTED
+  DUPLICATE
+  ARCHIVED
+}
+
+enum DuplicateStatus {
+  unique
+  possible_duplicate
+  duplicate
+  merged
+}
+
+enum EntityType {
+  Gym
+  PersonalTrainer
+  Athlete
+  Nutritionist
+  Event
+  Brand
+  Store
+  Federation
+  Club
+  Organization
+  Location
+}
+
+enum EventOrigin {
+  noogym
+  partner
+  community
+  external
+}
+
+enum VerificationStatus {
+  unverified
+  pending_review
+  verified
+  rejected
+}
+
+enum JobStatus {
+  pending
+  running
+  completed
+  failed
+}
+
+enum PublicationTarget {
+  blog
+  events
+  instagram
+  facebook
+}
+
+model Source {
+  id                    String           @id @default(cuid())
+  name                  String
+  url                   String
+  sourceType            SourceType
+  country               String           @default("Angola")
+  province              String?
+  city                  String?
+  trustScore            Int              @default(50)
+  enabled               Boolean          @default(true)
+  scrapingAllowed       Boolean          @default(true)
+  requiresReview        Boolean          @default(true)
+  updateFrequency       String           @default("daily")
+  crawlDelayMs          Int              @default(1500)
+  lastSeenHash          String?
+  contentSelector       String?
+  titleSelector         String?
+  robotsPolicy          String?
+  notes                 String?
+  lastCheckedAt         DateTime?
+  lastSuccessfulCheckAt DateTime?
+  status                SourceStatus     @default(active)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  rawContents           RawContent[]
+  eventCandidates       EventCandidate[]
+
+  @@index([sourceType, enabled])
+  @@index([country, province, city])
+  @@index([status])
+}
+
+model RawContent {
+  id           String           @id @default(cuid())
+  sourceId     String
+  externalId   String?
+  canonicalUrl String?
+  title        String
+  rawText      String
+  rawHtml      String?
+  author       String?
+  publishedAt  DateTime?
+  discoveredAt DateTime         @default(now())
+  fetchedAt    DateTime         @default(now())
+  contentHash  String
+  metadata     Json?
+  status       RawContentStatus @default(ingested)
+  source       Source           @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  content      Content?
+
+  @@unique([sourceId, externalId])
+  @@unique([contentHash])
+  @@index([sourceId, fetchedAt])
+  @@index([canonicalUrl])
+  @@index([status])
+}
+
+model Content {
+  id               String                  @id @default(cuid())
+  rawContentId     String                  @unique
+  title            String
+  slug             String
+  cleanText        String
+  summary          String?
+  contentType      IntelligenceContentType @default(unknown)
+  category         String?
+  country          String                  @default("Angola")
+  province         String?
+  city             String?
+  confidence       Int                     @default(0)
+  fitnessScore     Int                     @default(0)
+  angolaScore      Int                     @default(0)
+  relevanceScore   Int                     @default(0)
+  trustScore       Int                     @default(0)
+  duplicateStatus  DuplicateStatus         @default(unique)
+  duplicateOfId    String?
+  duplicateReason  String?
+  editorialStatus  EditorialStatus         @default(NORMALIZED)
+  draft            Json?
+  socialDraft      Json?
+  scoreExplanation Json?
+  scheduledFor     DateTime?
+  publishedAt      DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  rawContent       RawContent              @relation(fields: [rawContentId], references: [id], onDelete: Cascade)
+  entities         ContentEntity[]
+  eventCandidate   EventCandidate?
+  reviews          EditorialReview[]
+  publications     Publication[]
+
+  @@index([contentType, editorialStatus])
+  @@index([category])
+  @@index([country, province, city])
+  @@index([relevanceScore])
+  @@index([duplicateStatus])
+}
+
+model Entity {
+  id         String          @id @default(cuid())
+  name       String
+  entityType EntityType
+  country    String          @default("Angola")
+  province   String?
+  city       String?
+  metadata   Json?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  contents   ContentEntity[]
+
+  @@unique([name, entityType, country])
+  @@index([entityType])
+  @@index([country, province, city])
+}
+
+model ContentEntity {
+  contentId  String
+  entityId   String
+  confidence Int     @default(70)
+  role       String?
+  content    Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  entity     Entity  @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, entityId])
+  @@index([entityId])
+}
+
+model EventCandidate {
+  id                 String             @id @default(cuid())
+  contentId          String?            @unique
+  sourceId           String?
+  name               String
+  category           String?
+  description        String?
+  startDate          DateTime?
+  endDate            DateTime?
+  startTime          String?
+  location           String?
+  venue              String?
+  city               String?
+  province           String?
+  country            String             @default("Angola")
+  organizer          String?
+  origin             EventOrigin        @default(external)
+  price              String?
+  currency           String             @default("Kz")
+  registrationUrl    String?
+  contact            String?
+  sourceUrl          String?
+  imageUrl           String?
+  confidence         Int                @default(0)
+  verificationStatus VerificationStatus @default(pending_review)
+  duplicateStatus    DuplicateStatus    @default(unique)
+  duplicateOfId      String?
+  duplicateReason    String?
+  editorialStatus    EditorialStatus    @default(REVIEW_REQUIRED)
+  scheduledFor       DateTime?
+  publishedAt        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  content            Content?           @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  source             Source?            @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  reviews            EditorialReview[]
+  publications       Publication[]
+
+  @@index([sourceId])
+  @@index([city, province])
+  @@index([editorialStatus])
+  @@index([duplicateStatus])
+}
+
+model EditorialReview {
+  id               String          @id @default(cuid())
+  contentId        String?
+  eventCandidateId String?
+  reviewerId       String?
+  reviewerName     String?
+  status           EditorialStatus
+  notes            String?
+  createdAt        DateTime        @default(now())
+  content          Content?        @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  eventCandidate   EventCandidate? @relation(fields: [eventCandidateId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+  @@index([eventCandidateId])
+  @@index([status, createdAt])
+}
+
+model Publication {
+  id               String            @id @default(cuid())
+  contentId        String?
+  eventCandidateId String?
+  target           PublicationTarget
+  payload          Json
+  status           EditorialStatus   @default(READY_TO_PUBLISH)
+  publishedAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  content          Content?          @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  eventCandidate   EventCandidate?   @relation(fields: [eventCandidateId], references: [id], onDelete: Cascade)
+
+  @@index([target, status])
+  @@index([contentId])
+  @@index([eventCandidateId])
+}
+
+model CrawlJob {
+  id              String    @id @default(cuid())
+  name            String
+  sourceId        String?
+  jobType         String    @default("crawl")
+  status          JobStatus @default(pending)
+  attempts        Int       @default(0)
+  maxAttempts     Int       @default(3)
+  backoffMs       Int       @default(30000)
+  discoveredCount Int       @default(0)
+  processedCount  Int       @default(0)
+  logs            Json?
+  error           String?
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([name, status])
+  @@index([sourceId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorName  String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+}
