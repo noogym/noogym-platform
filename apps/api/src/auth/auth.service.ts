@@ -70,6 +70,12 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    if (!dto.termsAccepted || !dto.privacyPolicyAccepted) {
+      throw new BadRequestException(
+        'You must accept the terms and acknowledge the privacy policy.',
+      );
+    }
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -78,8 +84,14 @@ export class AuthService {
       throw new BadRequestException('Email already registered');
     }
 
+    const organizationName =
+      dto.organizationName?.trim() || `Conta pessoal de ${dto.name.trim()}`;
+    const organizationSlug =
+      dto.organizationSlug?.trim() ||
+      `conta-pessoal-${randomBytes(8).toString('hex')}`;
+
     const existingOrg = await this.prisma.organization.findUnique({
-      where: { slug: dto.organizationSlug },
+      where: { slug: organizationSlug },
     });
 
     if (existingOrg) {
@@ -87,12 +99,13 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
+    const acceptedAt = new Date();
 
     const user = await this.prisma.$transaction(async (tx) => {
       const organization = await tx.organization.create({
         data: {
-          name: dto.organizationName,
-          slug: dto.organizationSlug,
+          name: organizationName,
+          slug: organizationSlug,
         },
       });
 
@@ -104,6 +117,8 @@ export class AuthService {
           phone: dto.phone,
           passwordHash,
           role: 'OWNER',
+          termsAcceptedAt: acceptedAt,
+          privacyPolicyAcceptedAt: acceptedAt,
         },
         include: {
           organization: true,
@@ -117,7 +132,7 @@ export class AuthService {
       .sendWelcomeEmail({
         to: user.email,
         name: user.name,
-        organizationName: user.organization?.name ?? dto.organizationName,
+        organizationName: user.organization?.name ?? organizationName,
       })
       .catch((error) => {
         this.logger.error(

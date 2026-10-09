@@ -3,36 +3,38 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Facebook, Instagram, Mail, MapPin, Phone, Youtube } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 
 const groups = [
   {
-    title: "Plataforma",
+    title: "O App",
     links: [
-      { label: "Explorar Ginásios", href: "/explorar-ginasios" },
-      { label: "Planos", href: "/planos" },
-      { label: "Marketplace", href: "/marketplace" },
-      { label: "Eventos", href: "/eventos" },
+      { label: "Aceder à plataforma", href: "/login" },
+      { label: "Criar conta", href: "/criar-conta" },
+    ],
+  },
+  {
+    title: "Para empresas",
+    links: [
+      { label: "Todas as soluções", href: "/para-empresas" },
+      { label: "Ginásios", href: "/para-ginasios" },
+      { label: "Lojas e profissionais", href: "/para-empresas#lojas" },
+    ],
+  },
+  {
+    title: "Sobre nós",
+    links: [
+      { label: "A nossa visão", href: "/#sobre" },
       { label: "Blog", href: "/blog" },
+      { label: "Eventos", href: "/eventos" },
     ],
   },
   {
-    title: "Para Ginásios",
+    title: "Suporte",
     links: [
-      { label: "Seja parceiro", href: "/para-ginasios" },
-      { label: "Software de gestão", href: "/para-ginasios" },
-      { label: "Captação de alunos", href: "/para-ginasios" },
-      { label: "Suporte", href: "mailto:suporte@noogym.com" },
-    ],
-  },
-  {
-    title: "Ajuda",
-    links: [
-      { label: "Central de ajuda", href: "/ajuda" },
-      { label: "Termos de uso", href: "/termos" },
+      { label: "Contactos", href: "mailto:suporte@noogym.com" },
+      { label: "Centro de ajuda", href: "/ajuda" },
+      { label: "Termos de utilização", href: "/termos" },
       { label: "Política de privacidade", href: "/privacidade" },
-      { label: "Contacto", href: "mailto:suporte@noogym.com" },
     ],
   },
 ];
@@ -45,49 +47,36 @@ export function Footer() {
   if (isAuthPage || pathname.startsWith("/dashboard")) return null;
 
   return (
-    <footer className="container-page mb-6 mt-16">
-      <div className="glass rounded-lg p-8">
-        <div className="grid gap-10 lg:grid-cols-[1.3fr_2fr_1fr]">
+    <footer className="border-t border-white/8 bg-[#050807]">
+      <div className="container-page py-10 sm:py-12">
+        <div className="grid gap-10 lg:grid-cols-[0.95fr_2.05fr] lg:gap-14">
           <div>
-            <div className="flex items-center gap-2">
-              <Image src="/assets/logo.png" alt="Noogym" width={38} height={24} className="h-6 w-auto" />
+            <Link href="/" className="inline-flex items-center gap-2" aria-label="Noogym, página inicial">
+              <Image src="/assets/logo.png" alt="" width={38} height={24} className="h-6 w-auto" />
               <span className="text-xl font-bold">noogym</span>
-            </div>
-            <p className="mt-5 max-w-sm text-sm leading-6 text-white/62">A maior rede de ginásios de Angola conectada para evoluir juntos.</p>
-            <div className="mt-5 flex gap-3 text-white/60">
-              <Instagram className="h-5 w-5" />
-              <Facebook className="h-5 w-5" />
-              <Youtube className="h-5 w-5" />
-            </div>
+            </Link>
+            <p className="mt-4 max-w-sm text-sm leading-6 text-white/58">Uma marca de saúde e bem-estar, com tecnologia para aproximar pessoas e negócios.</p>
           </div>
-          <div className="grid gap-8 sm:grid-cols-3">
+
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
             {groups.map((group) => (
               <div key={group.title}>
-                <h3 className="font-bold">{group.title}</h3>
-                <ul className="mt-4 space-y-3 text-sm text-white/58">
+                <h2 className="text-sm font-bold">{group.title}</h2>
+                <ul className="mt-4 space-y-3 text-xs leading-5 text-white/55 sm:text-sm">
                   {group.links.map((link) => (
                     <li key={link.label}>
-                      <Link href={link.href} className="hover:text-limebrand">{link.label}</Link>
+                      <Link href={link.href} className="transition hover:text-limebrand focus-visible:text-limebrand focus-visible:outline-none">{link.label}</Link>
                     </li>
                   ))}
                 </ul>
               </div>
             ))}
           </div>
-          <div>
-            <h3 className="font-bold">Baixe o app</h3>
-            <div className="mt-4 grid gap-3">
-              <Button variant="secondary" disabled>App Store em breve</Button>
-              <Button variant="secondary" disabled>Google Play em breve</Button>
-            </div>
-            <div className="mt-5 space-y-2 text-sm text-white/58">
-              <p className="flex gap-2"><Phone className="h-4 w-4 text-limebrand" /> +244 923 456 789</p>
-              <p className="flex gap-2"><Mail className="h-4 w-4 text-limebrand" /> suporte@noogym.com</p>
-              <p className="flex gap-2"><MapPin className="h-4 w-4 text-limebrand" /> Luanda, Angola</p>
-            </div>
-          </div>
         </div>
-        <div className="mt-10 border-t border-white/10 pt-6 text-center text-xs text-white/42">© {currentYear} Noogym. Todos os direitos reservados.</div>
+        <div className="mt-9 flex flex-col gap-2 border-t border-white/8 pt-5 text-xs text-white/42 sm:flex-row sm:items-center sm:justify-between">
+          <span>© {currentYear} Noogym. Todos os direitos reservados.</span>
+          <span>Feito em Angola, para uma vida mais activa.</span>
+        </div>
       </div>
     </footer>
   );

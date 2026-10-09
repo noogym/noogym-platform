@@ -227,6 +227,8 @@ describe('AuthService refresh tokens', () => {
       organizationName: organization.name,
       organizationSlug: 'iron-house',
       password: 'StrongPass123',
+      termsAccepted: true,
+      privacyPolicyAccepted: true,
     });
 
     expect(welcomeEmail.sendWelcomeEmail).toHaveBeenCalledWith({

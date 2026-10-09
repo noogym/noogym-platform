@@ -51,6 +51,8 @@ interface AuthState {
     password: string;
     phone?: string;
     organizationName: string;
+    termsAccepted: boolean;
+    privacyPolicyAccepted: boolean;
   }) => Promise<void>;
   registerMock: (name?: string) => void;
   startSupportSession: (session: { accessToken: string; user: ApiAuthUser }) => void;
@@ -157,6 +159,8 @@ const buildRegisterPayload = (data: {
   password: string;
   phone?: string;
   organizationName: string;
+  termsAccepted: boolean;
+  privacyPolicyAccepted: boolean;
 }): RegisterPayload => ({
   name: data.name.trim(),
   email: data.email.trim(),
@@ -164,6 +168,8 @@ const buildRegisterPayload = (data: {
   phone: data.phone?.trim() || undefined,
   organizationName: data.organizationName.trim(),
   organizationSlug: slugify(data.organizationName),
+  termsAccepted: data.termsAccepted,
+  privacyPolicyAccepted: data.privacyPolicyAccepted,
 });
 
 const initialSession = getStoredSession();

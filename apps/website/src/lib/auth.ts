@@ -18,18 +18,19 @@ export type NoogymUser = {
 };
 
 export type AuthSessionResponse = {
-  token: string;
-  tokenType: "Bearer";
-  expiresIn: number;
+  token?: string;
+  accessToken?: string;
+  tokenType?: "Bearer";
+  expiresIn?: number;
   user: {
     id: string;
     name: string;
     email: string;
-    phone: string | null;
+    phone?: string | null;
     role: string;
-    status: string;
-    avatarUrl: string | null;
-    accesses: { scope: string; status: string }[];
+    status?: string;
+    avatarUrl?: string | null;
+    accesses?: { scope: string; status: string }[];
   };
 };
 
@@ -46,8 +47,8 @@ export function saveUserFromSession(session: AuthSessionResponse) {
     avatarUrl: session.user.avatarUrl,
     role: session.user.role,
     status: session.user.status,
-    accesses: session.user.accesses.map((access) => access.scope),
-    tokenType: session.tokenType,
+    accesses: (session.user.accesses ?? []).map((access) => access.scope),
+    tokenType: session.tokenType ?? "Bearer",
     expiresIn: session.expiresIn,
     loginAt: new Date().toISOString(),
   });
@@ -88,6 +89,6 @@ export function saveValidatedUser(user: MeResponse["user"]) {
     avatarUrl: user.avatarUrl,
     role: user.role,
     status: user.status,
-    accesses: user.accesses.map((access) => access.scope),
+    accesses: (user.accesses ?? []).map((access) => access.scope),
   });
 }

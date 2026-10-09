@@ -33,9 +33,9 @@ export function hasPartnerGymAccess(user: NoogymUser | null | undefined) {
 }
 
 export function hasPersonalAccess(user: NoogymUser | null | undefined) {
-  return user?.accesses?.includes("PERSONAL_PANEL");
+  return user?.role === "PERSONAL_TRAINER" || user?.accesses?.includes("PERSONAL_PANEL");
 }
 
 export function hasSellerAccess(user: NoogymUser | null | undefined) {
-  return user?.accesses?.includes("MARKET_SELLER");
+  return user?.role === "SELLER" || user?.accesses?.includes("MARKET_SELLER");
 }

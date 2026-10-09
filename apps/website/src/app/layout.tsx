@@ -5,18 +5,18 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CartProvider } from "@/components/layout/CartContext";
 import { I18nProvider } from "@/i18n/I18nProvider";
-import { FitlandiaModal } from "@/components/modals/FitlandiaModal";
 import { SessionProvider } from "@/components/auth/SessionContext";
 
 const googleAnalyticsId = "G-35VZ22GGP9";
 const clarityProjectId = "xp491n099f";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://noogym.com"),
   title: {
-    default: "Noogym | Treine em qualquer ginásio",
+    default: "Noogym | Fitness em Angola",
     template: "%s | Noogym",
   },
-  description: "Noogym conecta usuários aos melhores ginásios, planos, marketplace, eventos e gestão fitness em Angola.",
+  description: "A Noogym aproxima pessoas e negócios para tornar o fitness e o bem-estar mais acessíveis em Angola.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -50,7 +50,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <Header />
               <main>{children}</main>
               <Footer />
-              <FitlandiaModal />
             </CartProvider>
           </SessionProvider>
         </I18nProvider>

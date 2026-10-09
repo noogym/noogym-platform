@@ -14,12 +14,11 @@ import { MobileMenu } from "./MobileMenu";
 
 const links = [
   { href: "/", label: "Início" },
-  { href: "/explorar-ginasios", label: "Explorar Ginásios" },
-  { href: "/planos", label: "Planos" },
-  { href: "/marketplace", label: "Marketplace" },
-  { href: "/eventos", label: "Eventos" },
-  { href: "/para-ginasios", label: "Para Ginásios" },
+  { href: "/#app", label: "O app" },
+  { href: "/#empresas", label: "Para empresas" },
+  { href: "/#sobre", label: "Sobre nós" },
   { href: "/blog", label: "Blog" },
+  { href: "/eventos", label: "Eventos" },
 ];
 
 function isAuthPage(pathname: string) {
@@ -33,6 +32,7 @@ export function Header() {
   const [openingDashboard, startOpeningDashboard] = useTransition();
   const { count } = useCart();
   const { loading, logout, user } = useSession();
+  const showCart = ["/marketplace", "/carrinho", "/finalizar-compra"].some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
   if (isAuthPage(pathname) || pathname.startsWith("/dashboard")) return null;
 
@@ -57,10 +57,10 @@ export function Header() {
             <Image src="/assets/logo.png" alt="Noogym" width={38} height={24} className="h-6 w-auto" />
             <span className="text-xl font-bold tracking-normal">noogym</span>
           </Link>
-          <nav className="hidden items-center gap-6 xl:flex">
+          <nav className="hidden items-center gap-4 2xl:gap-5 xl:flex">
             {links.map((link) => {
               const marketplaceFlow = ["/carrinho", "/finalizar-compra", "/checkout"].includes(pathname);
-              const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href) || (link.href === "/marketplace" && marketplaceFlow);
+              const active = link.href === "/" ? pathname === "/" : link.href.includes("#") ? false : pathname.startsWith(link.href) || (link.href === "/marketplace" && marketplaceFlow);
               return (
                 <Link key={link.href} href={link.href} className={cn("relative py-7 text-sm font-medium text-white/74 transition hover:text-white", active && "text-limebrand")}>
                   {link.label}
@@ -71,12 +71,17 @@ export function Header() {
           </nav>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <LanguageSwitcher className="hidden md:block" />
-            <Link href="/carrinho" className="relative rounded-md p-3 text-white/72 hover:bg-white/8 hover:text-limebrand" aria-label="Abrir carrinho">
-              <ShoppingCart className="h-5 w-5" />
-              {count ? <span className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full bg-limebrand px-1 text-xs font-bold text-black">{count}</span> : null}
-            </Link>
+            {showCart ? (
+              <Link href="/carrinho" className="relative rounded-md p-3 text-white/72 hover:bg-white/8 hover:text-limebrand" aria-label="Abrir carrinho">
+                <ShoppingCart className="h-5 w-5" />
+                {count ? <span className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full bg-limebrand px-1 text-xs font-bold text-black">{count}</span> : null}
+              </Link>
+            ) : null}
             {loading ? (
-              <span className="hidden h-9 w-36 rounded-md border border-white/10 bg-white/[0.03] xl:inline-flex" aria-hidden="true" />
+              <>
+                <Button href="/login" variant="secondary" size="sm" className="hidden xl:inline-flex">Entrar</Button>
+                <Button href="/criar-conta" size="sm" className="hidden xl:inline-flex">Começar agora</Button>
+              </>
             ) : user ? (
               <>
                 <Button type="button" size="sm" className="hidden xl:inline-flex" onClick={openDashboard} disabled={openingDashboard}>
@@ -88,7 +93,7 @@ export function Header() {
             ) : (
               <>
                 <Button href="/login" variant="secondary" size="sm" className="hidden xl:inline-flex">Entrar</Button>
-                <Button href="/criar-conta" size="sm" className="hidden xl:inline-flex">Criar conta</Button>
+                <Button href="/criar-conta" size="sm" className="hidden xl:inline-flex">Começar agora</Button>
               </>
             )}
             <button onClick={() => setMenuOpen(true)} className="rounded-md p-3 xl:hidden" aria-label="Abrir menu">
