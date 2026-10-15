@@ -46,7 +46,7 @@ export function MobileMenu({
         </div>
         <nav className="mt-8 grid gap-2">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} onClick={onClose} className="rounded-md px-3 py-3 text-white/78 hover:bg-white/8 hover:text-limebrand">
+            <Link key={link.href} href={link.href} onClick={onClose} className="rounded-md px-3 py-3 text-white/78 hover:bg-white/8 hover:text-limebrand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-limebrand">
               {link.label}
             </Link>
           ))}
@@ -66,7 +66,7 @@ export function MobileMenu({
           ) : (
             <>
               <Button href="/login" variant="secondary" onClick={onClose}>Entrar</Button>
-              <Button href="/criar-conta" onClick={onClose}>Criar conta</Button>
+              <Button href="/criar-conta" onClick={onClose}>Começar agora</Button>
             </>
           )}
         </div>

@@ -47,7 +47,10 @@ describe('DatabaseReadinessInterceptor', () => {
     const interceptor = new DatabaseReadinessInterceptor(prisma as never);
 
     expect(() =>
-      interceptor.intercept(contextFor({ method: 'POST', path: '/auth/login' }), next),
+      interceptor.intercept(
+        contextFor({ method: 'POST', path: '/auth/login' }),
+        next,
+      ),
     ).toThrow(ServiceUnavailableException);
     expect(next.handle).not.toHaveBeenCalled();
   });

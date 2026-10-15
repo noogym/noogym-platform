@@ -9,10 +9,7 @@ import { EmailDeliveryStatus, Prisma } from '@prisma/client';
 import { Job, Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import { PrismaService } from '../../prisma/prisma.service';
-import {
-  EmailDeliveryService,
-  SendEmailInput,
-} from './email-delivery.service';
+import { EmailDeliveryService, SendEmailInput } from './email-delivery.service';
 
 type QueueEmailInput = SendEmailInput & {
   maxAttempts?: number;
@@ -73,7 +70,9 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
         (job) => this.processJob(job),
         {
           connection: this.connection,
-          concurrency: Number(this.config.get<string>('EMAIL_WORKER_CONCURRENCY', '5')),
+          concurrency: Number(
+            this.config.get<string>('EMAIL_WORKER_CONCURRENCY', '5'),
+          ),
         },
       );
       this.worker.on('failed', (job, error) => {
@@ -198,7 +197,10 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
           lastError: null,
         },
       });
-      await this.markRelatedMessageSent(current.messageRecipientId, current.messageId);
+      await this.markRelatedMessageSent(
+        current.messageRecipientId,
+        current.messageId,
+      );
 
       return {
         deliveryId,
@@ -248,7 +250,9 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
         attempts: maxAttempts,
         backoff: {
           type: 'exponential',
-          delay: Number(this.config.get<string>('EMAIL_RETRY_DELAY_MS', '60000')),
+          delay: Number(
+            this.config.get<string>('EMAIL_RETRY_DELAY_MS', '60000'),
+          ),
         },
         jobId: deliveryId,
         removeOnComplete: { count: 1000 },

@@ -16,6 +16,12 @@ export default async function DashboardSectionPage({
   const { section } = await params;
   const query = await searchParams;
   if (section === "painel-de-controle") redirect("/dashboard/resumo");
+  if (section === "academias") redirect("/dashboard/ginasios");
+  if (section === "produtos") redirect("/dashboard/marketplace");
+  if (section === "relatorios") redirect("/dashboard/progresso");
+  if (section === "configuracoes") redirect("/dashboard/perfil?tab=preferencias");
+  if (section === "seguranca") redirect("/dashboard/perfil?tab=seguranca");
+  if (section === "pagamentos") redirect("/dashboard/assinatura?tab=pagamentos");
   if (!dashboardSlugs.includes(section as DashboardSlug)) notFound();
   return <DashboardPage slug={section as DashboardSlug} tab={query?.tab} />;
 }

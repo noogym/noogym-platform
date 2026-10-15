@@ -65,7 +65,9 @@ export class SettingsService {
       finance: {
         ...defaults.finance,
         ...this.asRecord(partial.finance),
-        paymentMethods: Array.isArray(this.asRecord(partial.finance).paymentMethods)
+        paymentMethods: Array.isArray(
+          this.asRecord(partial.finance).paymentMethods,
+        )
           ? this.asRecord(partial.finance).paymentMethods
           : defaults.finance.paymentMethods,
       },

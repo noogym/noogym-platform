@@ -58,27 +58,42 @@ describe('DesktopSyncService', () => {
 
     expect(prisma.member.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ organizationId: 'org-1', gymId: 'gym-1' }),
+        where: expect.objectContaining({
+          organizationId: 'org-1',
+          gymId: 'gym-1',
+        }),
       }),
     );
     expect(prisma.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ organizationId: 'org-1', gymId: 'gym-1' }),
+        where: expect.objectContaining({
+          organizationId: 'org-1',
+          gymId: 'gym-1',
+        }),
       }),
     );
     expect(prisma.sale.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ organizationId: 'org-1', gymId: 'gym-1' }),
+        where: expect.objectContaining({
+          organizationId: 'org-1',
+          gymId: 'gym-1',
+        }),
       }),
     );
     expect(prisma.gymClass.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ organizationId: 'org-1', gymId: 'gym-1' }),
+        where: expect.objectContaining({
+          organizationId: 'org-1',
+          gymId: 'gym-1',
+        }),
       }),
     );
     expect(prisma.checkIn.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ organizationId: 'org-1', gymId: 'gym-1' }),
+        where: expect.objectContaining({
+          organizationId: 'org-1',
+          gymId: 'gym-1',
+        }),
       }),
     );
   });

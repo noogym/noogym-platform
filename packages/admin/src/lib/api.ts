@@ -47,6 +47,8 @@ export interface RegisterPayload extends LoginPayload {
   organizationSlug: string;
   name: string;
   phone?: string;
+  termsAccepted: boolean;
+  privacyPolicyAccepted: boolean;
 }
 
 export interface PaginatedResponse<T> {

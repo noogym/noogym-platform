@@ -2,24 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Lock, Mail } from "lucide-react";
+import { AlertCircle, CheckCircle2, Lock, Mail } from "lucide-react";
 import { useState } from "react";
-import { AuthDivider } from "@/components/auth/AuthDivider";
 import { AuthInput } from "@/components/auth/AuthInput";
-import { GoogleButton } from "@/components/auth/GoogleButton";
-import { IdentityNotice } from "@/components/auth/IdentityNotice";
 import { hasTurnstileSiteKey, TurnstileWidget } from "@/components/security/TurnstileWidget";
 import { Button } from "@/components/ui/Button";
 import { getApiErrorMessage, readApiPayload } from "@/lib/api";
 import { useSession } from "@/components/auth/SessionContext";
-import { demoMode, saveUserFromSession, saveUserSession, type AuthSessionResponse } from "@/lib/auth";
+import { saveUserFromSession, type AuthSessionResponse } from "@/lib/auth";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function LoginForm() {
   const router = useRouter();
   const { refresh } = useSession();
-  const [values, setValues] = useState({ email: "", password: "", remember: true });
+  const [values, setValues] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [message, setMessage] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -36,10 +33,9 @@ export function LoginForm() {
     event.preventDefault();
     const nextErrors: typeof errors = {};
 
-    if (!values.email.trim()) nextErrors.email = "Informe o seu e-mail.";
-    else if (!emailPattern.test(values.email)) nextErrors.email = "Use um e-mail válido.";
-    if (!values.password) nextErrors.password = "Informe a sua senha.";
-    else if (values.password.length < 6) nextErrors.password = "A senha precisa ter pelo menos 6 caracteres.";
+    if (!values.email.trim()) nextErrors.email = "Indica o teu e-mail.";
+    else if (!emailPattern.test(values.email)) nextErrors.email = "Usa um endereço de e-mail válido.";
+    if (!values.password) nextErrors.password = "Indica a tua palavra-passe.";
 
     setErrors(nextErrors);
     setMessage("");
@@ -63,7 +59,7 @@ export function LoginForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: values.email,
+          email: values.email.trim(),
           password: values.password,
           turnstileToken: turnstileToken || undefined,
         }),
@@ -74,9 +70,11 @@ export function LoginForm() {
         throw new Error(getApiErrorMessage(payload, "E-mail ou senha invalidos."));
       }
 
-      if ("token" in payload) {
-        saveUserFromSession(payload);
+      if ("user" in payload) {
+        saveUserFromSession(payload as AuthSessionResponse);
         void refresh();
+      } else {
+        throw new Error("A API não devolveu os dados da sessão.");
       }
 
       setMessage("Login realizado com sucesso. A abrir o dashboard...");
@@ -88,31 +86,13 @@ export function LoginForm() {
     }
   }
 
-  function handleGoogleLogin() {
-    if (!demoMode) {
-      setSubmitError("Login com Google ainda nao esta configurado para producao.");
-      return;
-    }
-
-    saveUserSession({
-      name: "Miguel Silva",
-      email: "miguel.silva@email.com",
-      role: "member",
-      accesses: ["SITE", "MOBILE_APP"],
-      provider: "google",
-      loginAt: new Date().toISOString(),
-    });
-    router.push(destinationAfterLogin());
-  }
-
   return (
-    <form onSubmit={submit} className="space-y-5 sm:space-y-6">
+    <form onSubmit={submit} className="space-y-6 sm:space-y-7">
       <div>
-        <h1 className="text-2xl font-black tracking-normal text-white sm:text-3xl">Bem-vindo de volta!</h1>
-        <p className="mt-2 text-sm text-white/58">Entre uma vez e continue em qualquer produto Noogym.</p>
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-limebrand">A tua conta Noogym</p>
+        <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">Bem-vindo de volta.</h1>
+        <p className="mt-3 text-sm leading-6 text-white/58">Entra para continuares de onde ficaste.</p>
       </div>
-
-      <IdentityNotice compact />
 
       {message ? (
         <div className="flex items-start gap-3 rounded-md border border-limebrand/30 bg-limebrand/8 p-3 text-sm text-white">
@@ -122,7 +102,8 @@ export function LoginForm() {
       ) : null}
 
       {submitError ? (
-        <div className="rounded-md border border-red-400/35 bg-red-950/25 p-3 text-sm text-red-100">
+        <div role="alert" className="flex items-start gap-2 rounded-md border border-red-400/35 bg-red-950/25 p-3 text-sm text-red-100">
+          <AlertCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
           {submitError}
         </div>
       ) : null}
@@ -132,55 +113,41 @@ export function LoginForm() {
           label="E-mail"
           icon={Mail}
           type="email"
-          placeholder="seu@email.com"
+          placeholder="teu@email.com"
+          autoComplete="email"
+          autoCapitalize="none"
           value={values.email}
           error={errors.email}
           onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
         />
         <AuthInput
-          label="Senha"
+          label="Palavra-passe"
           icon={Lock}
           type="password"
-          placeholder="**********"
+          placeholder="A tua palavra-passe"
+          autoComplete="current-password"
           value={values.password}
           error={errors.password}
           onChange={(event) => setValues((current) => ({ ...current, password: event.target.value }))}
         />
       </div>
 
-      <div className="flex flex-col gap-3 text-xs min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
-        <label className="flex items-center gap-2 text-white/72">
-          <input
-            type="checkbox"
-            checked={values.remember}
-            onChange={(event) => setValues((current) => ({ ...current, remember: event.target.checked }))}
-            className="h-4 w-4 rounded border-white/20 bg-white/5 accent-limebrand"
-          />
-          Lembrar de mim
-        </label>
-        <Link href="/esqueci-senha" className="font-semibold text-limebrand transition hover:text-white">Esqueci minha senha</Link>
+      <div className="-mt-3 flex justify-end">
+        <Link href="/esqueci-senha" className="text-sm font-semibold text-limebrand transition hover:text-white">Esqueceste a palavra-passe?</Link>
       </div>
 
       {hasTurnstileSiteKey() ? (
         <TurnstileWidget error={turnstileError} onError={setTurnstileError} onVerify={setTurnstileToken} />
       ) : null}
 
-      <Button type="submit" className="h-14 w-full" disabled={submitting}>
+      <Button type="submit" className="h-14 w-full text-base" disabled={submitting}>
         {submitting ? "A entrar..." : "Entrar"}
       </Button>
 
-      <AuthDivider />
-
-      <GoogleButton
-        onClick={handleGoogleLogin}
-      >
-        Entrar com Google
-      </GoogleButton>
-
-      <p className="text-center text-sm text-white/58">
-        Ainda não tem uma conta?{" "}
-        <Link href="/criar-conta" className="font-semibold text-limebrand transition hover:text-white">Criar conta</Link>
-      </p>
+      <div className="rounded-md border border-white/10 bg-white/[0.025] px-4 py-3 text-center text-sm text-white/58">
+        Ainda não tens conta?{" "}
+        <Link href="/criar-conta" className="font-semibold text-limebrand transition hover:text-white">Criar uma conta</Link>
+      </div>
     </form>
   );
 }

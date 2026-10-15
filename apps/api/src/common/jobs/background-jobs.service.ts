@@ -152,7 +152,12 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
       : undefined;
 
     const backgroundJob = input.dedupeKey
-      ? await this.findOrCreateDedupedJob(input, payload, maxAttempts, scheduledAt)
+      ? await this.findOrCreateDedupedJob(
+          input,
+          payload,
+          maxAttempts,
+          scheduledAt,
+        )
       : await this.prisma.backgroundJob.create({
           data: {
             organizationId: input.organizationId ?? undefined,
@@ -165,7 +170,10 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
           },
         });
 
-    if (backgroundJob.status === 'COMPLETED' || backgroundJob.status === 'SKIPPED') {
+    if (
+      backgroundJob.status === 'COMPLETED' ||
+      backgroundJob.status === 'SKIPPED'
+    ) {
       return backgroundJob;
     }
 
@@ -182,7 +190,9 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
     }
 
     await this.processBackgroundJob(backgroundJob.id, { rethrow: false });
-    return this.prisma.backgroundJob.findUnique({ where: { id: backgroundJob.id } });
+    return this.prisma.backgroundJob.findUnique({
+      where: { id: backgroundJob.id },
+    });
   }
 
   async findAll(organizationId: string, query: PaginationQueryDto) {
@@ -480,7 +490,9 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
       case backgroundJobNames.paymentsGenerateReceipt:
         return this.handleGenerateReceipt(payload);
       case backgroundJobNames.paymentsConfirmGateway:
-        return this.skipped('Payment gateway confirmation is waiting for gateway integration.');
+        return this.skipped(
+          'Payment gateway confirmation is waiting for gateway integration.',
+        );
       case backgroundJobNames.paymentsReconcilePending:
         return this.handleReconcilePendingPayments(payload);
       case backgroundJobNames.subscriptionsMarkExpired:
@@ -547,16 +559,25 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
       html: this.optionalString(data.html),
       metadata: this.jsonObject(data.metadata),
     });
-    return { result: { deliveryId: result.deliveryId, queued: result.queued, sent: result.sent } };
+    return {
+      result: {
+        deliveryId: result.deliveryId,
+        queued: result.queued,
+        sent: result.sent,
+      },
+    };
   }
 
   private async handleMarketingCampaign(payload: Prisma.JsonValue | null) {
     const data = this.objectPayload(payload);
     const organizationId = this.optionalString(data.organizationId);
-    if (!organizationId) return this.skipped('Campaign requires organizationId.');
+    if (!organizationId)
+      return this.skipped('Campaign requires organizationId.');
 
     const memberIds = Array.isArray(data.memberIds)
-      ? data.memberIds.filter((value): value is string => typeof value === 'string')
+      ? data.memberIds.filter(
+          (value): value is string => typeof value === 'string',
+        )
       : [];
     const members = await this.prisma.member.findMany({
       where: {
@@ -598,7 +619,8 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
   private async handleMarketingSegment(payload: Prisma.JsonValue | null) {
     const data = this.objectPayload(payload);
     const organizationId = this.optionalString(data.organizationId);
-    if (!organizationId) return this.skipped('Segment build requires organizationId.');
+    if (!organizationId)
+      return this.skipped('Segment build requires organizationId.');
 
     const status = this.optionalString(data.status) as MemberStatus | undefined;
     const members = await this.prisma.member.findMany({
@@ -609,7 +631,12 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
       select: { id: true },
       take: Number(data.limit ?? 5000),
     });
-    return { result: { memberIds: members.map((member) => member.id), total: members.length } };
+    return {
+      result: {
+        memberIds: members.map((member) => member.id),
+        total: members.length,
+      },
+    };
   }
 
   private async handlePaymentReminder(payload: Prisma.JsonValue | null) {
@@ -655,16 +682,20 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
     const data = this.objectPayload(payload);
     const organizationId = this.optionalString(data.organizationId);
     const report = this.optionalString(data.report) ?? 'overview';
-    if (!organizationId) return this.skipped('Report export requires organizationId.');
+    if (!organizationId)
+      return this.skipped('Report export requires organizationId.');
 
     const result = await this.reportSnapshot(organizationId, report);
-    return { result: { format: data.format ?? 'json', report, snapshot: result } };
+    return {
+      result: { format: data.format ?? 'json', report, snapshot: result },
+    };
   }
 
   private async handleMonthlyGymReport(payload: Prisma.JsonValue | null) {
     const data = this.objectPayload(payload);
     const organizationId = this.optionalString(data.organizationId);
-    if (!organizationId) return this.skipped('Monthly gym report requires organizationId.');
+    if (!organizationId)
+      return this.skipped('Monthly gym report requires organizationId.');
 
     const gyms = await this.prisma.gym.findMany({
       where: { organizationId },
@@ -673,7 +704,11 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
     const reports = await Promise.all(
       gyms.map(async (gym) => ({
         gym,
-        snapshot: await this.reportSnapshot(organizationId, 'monthly-gym', gym.id),
+        snapshot: await this.reportSnapshot(
+          organizationId,
+          'monthly-gym',
+          gym.id,
+        ),
       })),
     );
     return { result: { gyms: reports } };
@@ -682,7 +717,8 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
   private async handlePaymentAfterPaid(payload: Prisma.JsonValue | null) {
     const data = this.objectPayload(payload);
     const paymentId = this.optionalString(data.paymentId);
-    if (!paymentId) return this.skipped('payments.after-paid requires paymentId.');
+    if (!paymentId)
+      return this.skipped('payments.after-paid requires paymentId.');
 
     await this.handleGenerateReceipt(payload);
     const payment = await this.prisma.payment.findUnique({
@@ -693,7 +729,9 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
       return this.skipped('Payment is not paid.');
     }
     if (!payment.member?.email) {
-      return { result: { receipt: true, notification: 'member email missing' } };
+      return {
+        result: { receipt: true, notification: 'member email missing' },
+      };
     }
 
     const amount = Number(payment.amount).toLocaleString('pt-AO');
@@ -722,7 +760,8 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
   private async handleGenerateReceipt(payload: Prisma.JsonValue | null) {
     const data = this.objectPayload(payload);
     const paymentId = this.optionalString(data.paymentId);
-    if (!paymentId) return this.skipped('Receipt generation requires paymentId.');
+    if (!paymentId)
+      return this.skipped('Receipt generation requires paymentId.');
 
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
@@ -741,7 +780,9 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
     return { result: { receiptNumber } };
   }
 
-  private async handleReconcilePendingPayments(payload: Prisma.JsonValue | null) {
+  private async handleReconcilePendingPayments(
+    payload: Prisma.JsonValue | null,
+  ) {
     const data = this.objectPayload(payload);
     const organizationId = this.optionalString(data.organizationId);
     const pending = await this.prisma.payment.count({
@@ -750,10 +791,18 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
         status: PaymentStatus.PENDING,
       },
     });
-    return { result: { pending, reconciled: 0, note: 'No payment gateway connector configured.' } };
+    return {
+      result: {
+        pending,
+        reconciled: 0,
+        note: 'No payment gateway connector configured.',
+      },
+    };
   }
 
-  private async handleMarkExpiredSubscriptions(payload: Prisma.JsonValue | null) {
+  private async handleMarkExpiredSubscriptions(
+    payload: Prisma.JsonValue | null,
+  ) {
     const data = this.objectPayload(payload);
     const organizationId = this.optionalString(data.organizationId);
     const now = new Date();
@@ -767,14 +816,17 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
       take: 5000,
     });
 
-    if (!expired.length) return { result: { expired: 0, membersMarkedOverdue: 0 } };
+    if (!expired.length)
+      return { result: { expired: 0, membersMarkedOverdue: 0 } };
 
     await this.prisma.subscription.updateMany({
       where: { id: { in: expired.map((subscription) => subscription.id) } },
       data: { status: SubscriptionStatus.EXPIRED },
     });
 
-    const memberIds = [...new Set(expired.map((subscription) => subscription.memberId))];
+    const memberIds = [
+      ...new Set(expired.map((subscription) => subscription.memberId)),
+    ];
     const activeSubscriptions = await this.prisma.subscription.findMany({
       where: {
         memberId: { in: memberIds },
@@ -783,8 +835,12 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
       },
       select: { memberId: true },
     });
-    const stillActive = new Set(activeSubscriptions.map((subscription) => subscription.memberId));
-    const overdueMembers = memberIds.filter((memberId) => !stillActive.has(memberId));
+    const stillActive = new Set(
+      activeSubscriptions.map((subscription) => subscription.memberId),
+    );
+    const overdueMembers = memberIds.filter(
+      (memberId) => !stillActive.has(memberId),
+    );
     if (overdueMembers.length) {
       await this.prisma.member.updateMany({
         where: { id: { in: overdueMembers }, status: MemberStatus.ACTIVE },
@@ -800,7 +856,9 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  private async handleSubscriptionExpiryReminders(payload: Prisma.JsonValue | null) {
+  private async handleSubscriptionExpiryReminders(
+    payload: Prisma.JsonValue | null,
+  ) {
     const data = this.objectPayload(payload);
     const organizationId = this.optionalString(data.organizationId);
     const daysBefore = Number(data.daysBefore ?? 3);
@@ -832,11 +890,17 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
         html: this.emailTemplate.render({
           details: [
             { label: 'Plano', value: subscription.plan.name },
-            { label: 'Validade', value: subscription.endDate.toLocaleDateString('pt-AO') },
+            {
+              label: 'Validade',
+              value: subscription.endDate.toLocaleDateString('pt-AO'),
+            },
           ],
           eyebrow: 'Plano',
           greeting: `Ola, ${subscription.member.name}`,
-          intro: [content, 'Renove a tempo para continuar a treinar sem interrupcoes.'],
+          intro: [
+            content,
+            'Renove a tempo para continuar a treinar sem interrupcoes.',
+          ],
           preheader: content,
           title: 'Plano quase a expirar',
         }),
@@ -912,7 +976,8 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
   private async handleAfterCheckin(payload: Prisma.JsonValue | null) {
     const data = this.objectPayload(payload);
     const checkinId = this.optionalString(data.checkinId);
-    if (!checkinId) return this.skipped('checkins.after-checkin requires checkinId.');
+    if (!checkinId)
+      return this.skipped('checkins.after-checkin requires checkinId.');
 
     const checkin = await this.prisma.checkIn.findUnique({
       where: { id: checkinId },
@@ -964,18 +1029,31 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
     const organizationId = this.optionalString(data.organizationId);
     const [members, activeMembers, overdueMembers, payments, checkins] =
       await this.prisma.$transaction([
-        this.prisma.member.count({ where: { ...(organizationId ? { organizationId } : {}) } }),
         this.prisma.member.count({
-          where: { ...(organizationId ? { organizationId } : {}), status: MemberStatus.ACTIVE },
+          where: { ...(organizationId ? { organizationId } : {}) },
         }),
         this.prisma.member.count({
-          where: { ...(organizationId ? { organizationId } : {}), status: MemberStatus.OVERDUE },
+          where: {
+            ...(organizationId ? { organizationId } : {}),
+            status: MemberStatus.ACTIVE,
+          },
+        }),
+        this.prisma.member.count({
+          where: {
+            ...(organizationId ? { organizationId } : {}),
+            status: MemberStatus.OVERDUE,
+          },
         }),
         this.prisma.payment.aggregate({
-          where: { ...(organizationId ? { organizationId } : {}), status: PaymentStatus.PAID },
+          where: {
+            ...(organizationId ? { organizationId } : {}),
+            status: PaymentStatus.PAID,
+          },
           _sum: { amount: true },
         }),
-        this.prisma.checkIn.count({ where: { ...(organizationId ? { organizationId } : {}) } }),
+        this.prisma.checkIn.count({
+          where: { ...(organizationId ? { organizationId } : {}) },
+        }),
       ]);
 
     return {
@@ -989,7 +1067,10 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  private async handleAiMetrics(payload: Prisma.JsonValue | null, name: string) {
+  private async handleAiMetrics(
+    payload: Prisma.JsonValue | null,
+    name: string,
+  ) {
     const analytics = await this.handleAnalyticsRecalculate(payload);
     return {
       result: {
@@ -1073,23 +1154,34 @@ export class BackgroundJobsService implements OnModuleInit, OnModuleDestroy {
   }
 
   private errorMessage(error: unknown) {
-    return error instanceof Error ? error.message : 'Unknown background job error';
+    return error instanceof Error
+      ? error.message
+      : 'Unknown background job error';
   }
 
   private isEnabled() {
-    return this.config.get<string>('BACKGROUND_JOBS_ENABLED', 'true') !== 'false';
+    return (
+      this.config.get<string>('BACKGROUND_JOBS_ENABLED', 'true') !== 'false'
+    );
   }
 
   private isWorkerEnabled() {
-    return this.config.get<string>('BACKGROUND_WORKER_ENABLED', 'true') !== 'false';
+    return (
+      this.config.get<string>('BACKGROUND_WORKER_ENABLED', 'true') !== 'false'
+    );
   }
 
   private isRequired() {
-    return this.config.get<string>('BACKGROUND_JOBS_REQUIRED', 'false') === 'true';
+    return (
+      this.config.get<string>('BACKGROUND_JOBS_REQUIRED', 'false') === 'true'
+    );
   }
 
   private isRecurringEnabled() {
-    return this.config.get<string>('BACKGROUND_RECURRING_ENABLED', 'true') !== 'false';
+    return (
+      this.config.get<string>('BACKGROUND_RECURRING_ENABLED', 'true') !==
+      'false'
+    );
   }
 
   private maxAttempts() {

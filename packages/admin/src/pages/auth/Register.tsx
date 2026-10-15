@@ -56,7 +56,15 @@ export default function Register({ onNavigateToLogin }: RegisterProps) {
     if (!validate()) return;
     try {
       if (requiresOnlineAuth) {
-        await register({ name, email, password, phone, organizationName: gymName });
+        await register({
+          name,
+          email,
+          password,
+          phone,
+          organizationName: gymName,
+          termsAccepted: acceptedTerms,
+          privacyPolicyAccepted: acceptedTerms,
+        });
         return;
       }
 

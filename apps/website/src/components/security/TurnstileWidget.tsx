@@ -92,5 +92,5 @@ export function TurnstileWidget({ error, onError, onVerify }: TurnstileWidgetPro
 }
 
 export function hasTurnstileSiteKey() {
-  return Boolean(siteKey);
+  return process.env.NODE_ENV === "production" && Boolean(siteKey);
 }

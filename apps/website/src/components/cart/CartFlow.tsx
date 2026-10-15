@@ -287,12 +287,12 @@ function BenefitsStrip() {
   );
 }
 
-function EmptyCart() {
+function EmptyCart({ marketplaceHref }: { marketplaceHref: string }) {
   return (
     <SectionCard className="p-8 text-center">
       <h2 className="text-2xl font-black">O seu carrinho está vazio.</h2>
       <p className="mt-3 text-white/58">Adicione produtos do marketplace para continuar a compra.</p>
-      <Link href="/marketplace" className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-limebrand px-6 font-black text-black">
+      <Link href={marketplaceHref} className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-limebrand px-6 font-black text-black">
         Explorar Marketplace
       </Link>
     </SectionCard>
@@ -372,13 +372,15 @@ function CartDeliveryCard() {
   );
 }
 
-export function CartPageClient() {
+export function CartPageClient({ dashboard = false }: { dashboard?: boolean }) {
   const { count, items, clear } = useCart();
   const recommendations = useMemo(() => productByIds(recommendedIds), []);
+  const marketplaceHref = dashboard ? "/dashboard/marketplace" : "/marketplace";
+  const checkoutHref = dashboard ? "/dashboard/finalizar-compra" : "/finalizar-compra";
 
   return (
     <section className="container-page py-10">
-      <Link href="/marketplace" className="inline-flex items-center gap-2 text-sm font-black text-limebrand hover:text-limebrand2">
+      <Link href={marketplaceHref} className="inline-flex items-center gap-2 text-sm font-black text-limebrand hover:text-limebrand2">
         <ArrowLeft className="h-4 w-4" />
         Continuar a comprar
       </Link>
@@ -409,7 +411,7 @@ export function CartPageClient() {
                 </button>
               </div>
             </SectionCard>
-          ) : <EmptyCart />}
+          ) : <EmptyCart marketplaceHref={marketplaceHref} />}
 
           <h2 className="mt-10 text-2xl font-black">Você também pode gostar</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -423,7 +425,7 @@ export function CartPageClient() {
           <CouponCard />
           <PaymentCard
             action={(
-              <Link href="/finalizar-compra" className={cn("inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-limebrand px-4 font-black text-black transition hover:bg-limebrand2", !items.length && "pointer-events-none opacity-50")}>
+              <Link href={checkoutHref} className={cn("inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-limebrand px-4 font-black text-black transition hover:bg-limebrand2", !items.length && "pointer-events-none opacity-50")}>
                 Finalizar compra
                 <ArrowRight className="h-5 w-5" />
               </Link>
@@ -611,7 +613,7 @@ function SuccessModal({ onClose, onMarketplace, orderReference }: { onClose: () 
   );
 }
 
-export function CheckoutPageClient() {
+export function CheckoutPageClient({ dashboard = false }: { dashboard?: boolean }) {
   const router = useRouter();
   const { coupon, deliveryMethod, items, paymentMethod, clear, setDeliveryMethod, setPaymentMethod } = useCart();
   const [successOpen, setSuccessOpen] = useState(false);
@@ -620,10 +622,12 @@ export function CheckoutPageClient() {
   const [orderReference, setOrderReference] = useState("");
   const [address, setAddress] = useState("Talatona, Av. Belas Business Park, Luanda, Angola");
   const [apartment, setApartment] = useState("Apart. 123, Bloco B");
+  const cartHref = dashboard ? "/dashboard/carrinho" : "/carrinho";
+  const marketplaceHref = dashboard ? "/dashboard/marketplace" : "/marketplace";
 
   function goToMarketplace() {
     clear();
-    router.push("/marketplace");
+    router.push(marketplaceHref);
   }
 
   async function finishOrder() {
@@ -680,7 +684,7 @@ export function CheckoutPageClient() {
 
   return (
     <section className="container-page py-10">
-      <Link href="/carrinho" className="inline-flex items-center gap-2 text-sm font-black text-limebrand hover:text-limebrand2">
+      <Link href={cartHref} className="inline-flex items-center gap-2 text-sm font-black text-limebrand hover:text-limebrand2">
         <ArrowLeft className="h-4 w-4" />
         Voltar para o carrinho
       </Link>

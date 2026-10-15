@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
 
 export interface DatabaseStatus {
@@ -64,9 +69,7 @@ export class PrismaService
 
   isDatabaseConnectionError(error: unknown) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return ['P1001', 'P1002', 'P1008', 'P1017', 'P2024'].includes(
-        error.code,
-      );
+      return ['P1001', 'P1002', 'P1008', 'P1017', 'P2024'].includes(error.code);
     }
 
     return (

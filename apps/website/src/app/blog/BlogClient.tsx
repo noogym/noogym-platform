@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Calculator, Dumbbell, Flame, HeartPulse, Percent, Scale } from "lucide-react";
-import { blogCategories, articles } from "@/data/blog";
+import Link from "next/link";
+import { Calculator, Dumbbell, Flame, HeartPulse, MapPin, Percent, Scale } from "lucide-react";
+import { blogCategories, articles, fitnessUpdates } from "@/data/blog";
 import { ArticleCard } from "@/components/blog/ArticleCard";
 import { BlogSidebar } from "@/components/blog/BlogSidebar";
 import { Input } from "@/components/ui/Input";
@@ -78,6 +79,38 @@ export function BlogClient() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </section>
+      <section className="container-page py-8">
+        <div className="rounded-lg border border-limebrand/25 bg-limebrand/[0.04] p-5">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-limebrand">Atualidade</p>
+              <h2 className="mt-2 text-2xl font-black">Acontece no Fitness</h2>
+            </div>
+            <button className="text-sm font-bold text-limebrand transition hover:text-white" onClick={() => setCategory("Atualidade")}>
+              Ver atualidade
+            </button>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {fitnessUpdates.slice(0, 3).map((article) => (
+              <Link key={article.id} href={`/blog/${article.id}`} className="rounded-md border border-white/10 bg-black/25 p-4 transition hover:border-limebrand/45">
+                <p className="text-xs font-bold uppercase text-limebrand">{article.category}</p>
+                <h3 className="mt-2 font-bold leading-6">{article.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-white/58">{article.summary}</p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/50">
+                  <span>{article.date}</span>
+                  {article.city ? (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 text-limebrand" />
+                      {article.city}
+                    </span>
+                  ) : null}
+                  {article.sourceName ? <span>{article.sourceName}</span> : null}
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
