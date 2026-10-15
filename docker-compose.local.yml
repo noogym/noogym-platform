@@ -10,7 +10,44 @@ services:
   api:
     ports:
       - "${API_PORT:-3333}:3333"
+    environment:
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:3000}"
 
   web-admin:
+    build:
+      args:
+        NEXT_PUBLIC_NOOGYM_API_URL: "${NEXT_PUBLIC_NOOGYM_API_URL:-http://localhost:3333}"
+        NEXT_PUBLIC_NOOGYM_HTTP_ONLY_AUTH: "${NEXT_PUBLIC_NOOGYM_HTTP_ONLY_AUTH:-true}"
+    environment:
+      NOOGYM_API_URL: "${NOOGYM_API_URL:-http://api:3333}"
+      NEXT_PUBLIC_NOOGYM_API_URL: "${NEXT_PUBLIC_NOOGYM_API_URL:-http://localhost:3333}"
+      NEXT_PUBLIC_NOOGYM_HTTP_ONLY_AUTH: "${NEXT_PUBLIC_NOOGYM_HTTP_ONLY_AUTH:-true}"
     ports:
       - "${WEB_PORT:-3000}:3000"
+  leads-postgres:
+    ports:
+      - "5434:5432"
+
+  leads-api:
+    ports:
+      - "3334:3333"
+
+  website:
+    ports:
+      - "3001:3000"
+
+  marketing:
+    ports:
+      - "3002:3000"
+
+  intelligence-postgres:
+    ports:
+      - "5435:5432"
+
+  intelligence-api:
+    ports:
+      - "3340:3340"
+
+  intelligence-web:
+    ports:
+      - "3003:3000"

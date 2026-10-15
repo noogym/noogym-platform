@@ -1,0 +1,29 @@
+name: noogym-erp
+
+services:
+  web-admin:
+    build:
+      context: ../..
+      dockerfile: apps/erp/Dockerfile
+      args:
+        NEXT_PUBLIC_NOOGYM_API_URL: "${NEXT_PUBLIC_NOOGYM_API_URL:-https://apiv1.noogym.com}"
+        NEXT_PUBLIC_NOOGYM_HTTP_ONLY_AUTH: "${NEXT_PUBLIC_NOOGYM_HTTP_ONLY_AUTH:-true}"
+    image: noogym-erp
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      NODE_ENV: production
+      NOOGYM_API_URL: "${NOOGYM_API_URL:-https://apiv1.noogym.com}"
+      NEXT_PUBLIC_NOOGYM_API_URL: "${NEXT_PUBLIC_NOOGYM_API_URL:-https://apiv1.noogym.com}"
+      NEXT_PUBLIC_NOOGYM_HTTP_ONLY_AUTH: "${NEXT_PUBLIC_NOOGYM_HTTP_ONLY_AUTH:-true}"
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
