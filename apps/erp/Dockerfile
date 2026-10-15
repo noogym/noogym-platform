@@ -1,4 +1,4 @@
-FROM node:22-alpine AS base
+FROM node:25-alpine AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PNPM_CONFIG_FETCH_RETRIES=5
@@ -30,7 +30,7 @@ ENV NEXT_PUBLIC_NOOGYM_HTTP_ONLY_AUTH=$NEXT_PUBLIC_NOOGYM_HTTP_ONLY_AUTH
 
 RUN pnpm --filter @noogym/erp build
 
-FROM node:22-alpine AS runner
+FROM node:25-alpine AS runner
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
