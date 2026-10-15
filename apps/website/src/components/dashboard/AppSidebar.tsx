@@ -3,8 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Gift, LogOut } from "lucide-react";
-import { useState } from "react";
+import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutSession } from "@/lib/auth";
 import { useSession } from "@/components/auth/SessionContext";
@@ -14,7 +13,6 @@ import { dashboardIcons } from "./icons";
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [referralOpen, setReferralOpen] = useState(false);
   const { user } = useSession();
   const visibleNavSections = getDashboardNavSections(user);
 
@@ -42,6 +40,8 @@ export function AppSidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    target={item.external ? "_blank" : undefined}
+                    rel={item.external ? "noreferrer" : undefined}
                     className={cn(
                       "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-white/86 transition",
                       active ? "bg-limebrand text-black shadow-glow" : "hover:bg-white/8 hover:text-white",
@@ -56,27 +56,6 @@ export function AppSidebar() {
           </div>
         ))}
       </nav>
-
-      <div className="mx-4 mb-4 rounded-md border border-white/10 bg-white/[0.035]">
-        <button
-          type="button"
-          onClick={() => setReferralOpen((current) => !current)}
-          className="flex h-12 w-full items-center gap-3 px-4 text-left text-sm font-semibold text-white/86 transition hover:bg-white/8"
-          aria-expanded={referralOpen}
-        >
-          <Gift className="h-5 w-5 shrink-0 text-limebrand" />
-          <span className="min-w-0 flex-1 truncate">Indique e ganhe</span>
-          {referralOpen ? <ChevronUp className="h-4 w-4 shrink-0 text-white/58" /> : <ChevronDown className="h-4 w-4 shrink-0 text-white/58" />}
-        </button>
-        {referralOpen ? (
-          <div className="border-t border-white/8 px-4 pb-4 pt-3">
-            <p className="text-xs leading-5 text-white/62">Convide amigos e ganhe beneficios exclusivos.</p>
-            <button type="button" className="mt-4 h-9 rounded-md bg-limebrand px-4 text-sm font-bold text-black">
-              Convidar agora
-            </button>
-          </div>
-        ) : null}
-      </div>
 
       <div className="border-t border-white/10 p-4">
         <button

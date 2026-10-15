@@ -36,7 +36,7 @@ export function AuthLayout({ children, heroTitle, heroText, features, footerText
             className="absolute inset-0 bg-cover bg-center opacity-70"
             style={{
               backgroundImage:
-                "linear-gradient(90deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.62) 48%, rgba(0,0,0,0.9) 100%), linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.84)), url('/assets/home-reference.png')",
+                "linear-gradient(90deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.62) 48%, rgba(0,0,0,0.9) 100%), linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.84)), url('/images/home/hero-athlete-noogym.jpg')",
             }}
           />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_32%,rgba(182,255,0,0.22),transparent_15rem),linear-gradient(90deg,rgba(0,0,0,0.92),rgba(0,0,0,0.34))]" />

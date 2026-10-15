@@ -1,14 +1,22 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsBoolean,
+  IsEmail,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterDto {
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'Nome do espaço de trabalho, se a conta for profissional.' })
+  @IsOptional()
   @IsString()
-  organizationName: string;
+  organizationName?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'Identificador do espaço de trabalho, se a conta for profissional.' })
+  @IsOptional()
   @IsString()
-  organizationSlug: string;
+  organizationSlug?: string;
 
   @ApiProperty()
   @IsString()
@@ -26,4 +34,17 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  turnstileToken?: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  termsAccepted: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  privacyPolicyAccepted: boolean;
 }

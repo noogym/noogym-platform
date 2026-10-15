@@ -27,9 +27,10 @@ export async function GET() {
     );
   }
 
-  const payload = await response.json().catch(() => ({}));
+  const envelope = await response.json().catch(() => ({}));
+  const payload = envelope?.success === true && "data" in envelope ? envelope.data : envelope;
 
-  return Response.json(payload, {
+  return Response.json(response.ok ? { user: payload } : payload, {
     status: response.status,
     statusText: response.statusText,
   });

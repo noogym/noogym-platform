@@ -12,6 +12,7 @@ export type DashboardNavItem = {
   href: string;
   label: string;
   icon: DashboardIconName;
+  external?: boolean;
   roles?: string[];
   accesses?: DashboardAccessScope[];
 };
@@ -24,6 +25,8 @@ export type DashboardNavSection = {
 export type DashboardSlug =
   | "resumo"
   | "academias"
+  | "ginasios"
+  | "marketplace"
   | "check-ins"
   | "treinos"
   | "nutricao"
@@ -44,6 +47,8 @@ export type DashboardSlug =
 export const dashboardSlugs: DashboardSlug[] = [
   "resumo",
   "academias",
+  "ginasios",
+  "marketplace",
   "check-ins",
   "treinos",
   "nutricao",
@@ -63,53 +68,51 @@ export const dashboardSlugs: DashboardSlug[] = [
 ];
 
 export const screenMeta: Record<DashboardSlug, { title: string; description: string; icon: DashboardIconName; tabs?: string[] }> = {
-  resumo: { title: "Resumo", description: "Acompanhe seu progresso e continue evoluindo.", icon: "Home" },
-  academias: { title: "Ginásios", description: "Encontre ginásios, acompanhe visitas e faça check-in.", icon: "MapPin", tabs: ["Todos", "Meus ginásios", "Visitados", "Favoritos", "Mapa"] },
-  "check-ins": { title: "Check-ins", description: "Acompanhe sua frequência e mantenha a consistência.", icon: "CalendarCheck", tabs: ["Visão geral", "Frequência", "Histórico", "Conquistas", "Locais"] },
-  treinos: { title: "Treinos", description: "Acompanhe seus treinos, evolução e mantenha o foco nos seus objetivos.", icon: "Dumbbell", tabs: ["Meus treinos", "Biblioteca de treinos", "Planos de treino"] },
-  nutricao: { title: "Nutrição", description: "Acompanhe sua alimentação diária e mantenha o foco nos seus objetivos.", icon: "Apple", tabs: ["Visão geral", "Refeições", "Diário alimentar", "Plano alimentar", "Alimentos", "Receitas", "Suplementos"] },
-  progresso: { title: "Progresso", description: "Acompanhe sua evolução e conquiste sua melhor versão.", icon: "Activity", tabs: ["Visão geral", "Composição corporal", "Força", "Medidas", "Fotos", "Metas", "Análises"] },
-  relatorios: { title: "Relatórios", description: "Visão completa do seu desempenho e evolução.", icon: "FileBarChart", tabs: ["Visão geral", "Treinos", "Nutrição", "Progresso", "Hábitos", "Sono", "Avaliações"] },
-  produtos: { title: "Produtos", description: "Tudo o que você precisa para potencializar seus treinos.", icon: "ShoppingBag", tabs: ["Suplementos", "Alimentação", "Acessórios", "Kits", "Favoritos", "Ofertas"] },
-  pedidos: { title: "Pedidos", description: "Acompanhe todos os seus pedidos e entregas.", icon: "Package", tabs: ["Todos", "Em andamento", "Enviados", "Entregues", "Cancelados"] },
-  cupons: { title: "Cupons", description: "Aproveite descontos exclusivos para turbinar seus resultados.", icon: "TicketPercent", tabs: ["Meus cupons", "Cupons disponíveis"] },
-  favoritos: { title: "Favoritos", description: "Acesse tudo o que você salvou na sua jornada Noogym.", icon: "Heart", tabs: ["Ginásios", "Treinos", "Dietas", "Eventos"] },
-  perfil: { title: "Perfil", description: "Gerencie sua identidade, dados pessoais, perfis e vínculos Noogym.", icon: "User", tabs: ["Informações", "Perfis e vínculos"] },
-  "painel-personal": { title: "Painel Personal", description: "Gerencie alunos, planos e acompanhamentos profissionais.", icon: "User", tabs: ["Visão geral", "Meus alunos", "Planos de treino", "Avaliações", "Agenda"] },
-  "minha-loja": { title: "Minha Loja", description: "Gerencie sua operação no Noogym Market.", icon: "ShoppingBag", tabs: ["Visão geral", "Produtos", "Pedidos", "Estoque", "Pagamentos"] },
-  assinatura: { title: "Planos", description: "Gerencie sua assinatura, benefícios e uso do plano.", icon: "CreditCard", tabs: ["Meu plano", "Benefícios", "Uso do plano"] },
-  pagamentos: { title: "Pagamentos", description: "Acompanhe seus pagamentos, faturas e métodos.", icon: "WalletCards", tabs: ["Resumo", "Métodos de pagamento", "Histórico", "Faturas"] },
-  configuracoes: { title: "Configurações", description: "Personalize sua experiência Noogym.", icon: "Settings", tabs: ["Geral", "Perfil", "Privacidade", "Notificações", "Preferências", "Aparência", "Integrações"] },
-  seguranca: { title: "Segurança", description: "Proteja sua conta e mantenha suas informações seguras.", icon: "Shield", tabs: ["Senha", "Autenticação em duas etapas", "Dispositivos", "Sessões ativas", "Logs de segurança"] },
+  resumo: { title: "A tua jornada", description: "A tua actividade Noogym num só lugar.", icon: "Home" },
+  academias: { title: "Ginásios", description: "Descobre espaços para treinar perto de ti.", icon: "MapPin" },
+  ginasios: { title: "Encontrar ginásios", description: "Pesquisa ginásios parceiros e guarda os teus favoritos.", icon: "MapPin" },
+  marketplace: { title: "Marketplace", description: "Encontra produtos para apoiar a tua rotina de treino.", icon: "ShoppingBag" },
+  "check-ins": { title: "Check-ins", description: "Os teus registos de presença nos ginásios.", icon: "CalendarCheck" },
+  treinos: { title: "Treinos", description: "Os teus treinos e planos ligados à conta.", icon: "Dumbbell" },
+  nutricao: { title: "Nutrição", description: "Acompanha a tua alimentação na app Noogym.", icon: "Apple" },
+  progresso: { title: "Evolução", description: "Acompanha os dados sincronizados da tua actividade.", icon: "Activity" },
+  relatorios: { title: "Evolução", description: "Acompanha os dados sincronizados da tua actividade.", icon: "Activity" },
+  produtos: { title: "Marketplace", description: "Produtos e serviços para a tua rotina de treino.", icon: "ShoppingBag" },
+  pedidos: { title: "As minhas compras", description: "Consulta as compras feitas no marketplace Noogym.", icon: "Package" },
+  cupons: { title: "Ofertas", description: "Ofertas disponíveis para a tua conta.", icon: "TicketPercent" },
+  favoritos: { title: "Guardados", description: "Os ginásios e itens que guardaste.", icon: "Heart" },
+  perfil: { title: "A minha conta", description: "Os teus dados, preferências e segurança.", icon: "User", tabs: ["Dados pessoais", "Preferências", "Segurança"] },
+  "painel-personal": { title: "Painel de personal trainer", description: "Ferramentas profissionais da tua actividade.", icon: "User" },
+  "minha-loja": { title: "Gestão da loja", description: "Ferramentas profissionais para vender no Noogym Market.", icon: "ShoppingBag" },
+  assinatura: { title: "Plano e pagamentos", description: "Consulta as opções de plano e os pagamentos associados à tua conta.", icon: "CreditCard", tabs: ["Planos", "Pagamentos"] },
+  pagamentos: { title: "Plano e pagamentos", description: "Consulta as opções de plano e os pagamentos associados à tua conta.", icon: "CreditCard" },
+  configuracoes: { title: "A minha conta", description: "Os teus dados, preferências e segurança.", icon: "User" },
+  seguranca: { title: "A minha conta", description: "Os teus dados, preferências e segurança.", icon: "User" },
 };
 
 export const navSections: DashboardNavSection[] = [
   {
-    label: "Minha rotina",
+    label: "Para ti",
     items: [
-      { href: "/dashboard/resumo", label: "Resumo", icon: "Home" },
-      { href: "/dashboard/academias", label: "Ginásios", icon: "MapPin" },
-      { href: "/dashboard/check-ins", label: "Check-ins", icon: "CalendarCheck" },
+      { href: "/dashboard/resumo", label: "Início", icon: "Home" },
+      { href: "/dashboard/ginasios", label: "Encontrar ginásios", icon: "MapPin" },
       { href: "/dashboard/treinos", label: "Treinos", icon: "Dumbbell" },
-      { href: "/dashboard/nutricao", label: "Nutrição", icon: "Apple" },
-      { href: "/dashboard/progresso", label: "Progresso", icon: "Activity" },
-      { href: "/dashboard/relatorios", label: "Relatórios", icon: "FileBarChart" },
+      { href: "/dashboard/progresso", label: "Evolução", icon: "Activity" },
     ],
   },
   {
-    label: "Marketplace",
+    label: "Comprar",
     items: [
-      { href: "/dashboard/produtos", label: "Produtos", icon: "ShoppingBag" },
-      { href: "/dashboard/pedidos", label: "Pedidos", icon: "Package" },
-      { href: "/dashboard/cupons", label: "Cupons", icon: "TicketPercent" },
-      { href: "/dashboard/favoritos", label: "Favoritos", icon: "Heart" },
+      { href: "/dashboard/marketplace", label: "Marketplace", icon: "ShoppingBag" },
+      { href: "/dashboard/pedidos", label: "As minhas compras", icon: "Package" },
     ],
   },
   {
     label: "Painéis profissionais",
     items: [
-      { href: "/dashboard/painel-personal", label: "Painel Personal", icon: "User", accesses: ["PERSONAL_PANEL"] },
-      { href: "/dashboard/minha-loja", label: "Minha Loja", icon: "ShoppingBag", accesses: ["MARKET_SELLER"] },
+      { href: process.env.NEXT_PUBLIC_NOOGYM_WEB_URL ? new URL(process.env.NEXT_PUBLIC_NOOGYM_WEB_URL).origin : process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://admin.noogym.com", label: "ERP do ginásio", icon: "Home", roles: ["GYM_OWNER", "GYM_STAFF"], accesses: ["GYM_ERP"], external: true },
+      { href: "/dashboard/painel-personal", label: "Painel Personal", icon: "User", roles: ["PERSONAL_TRAINER"], accesses: ["PERSONAL_PANEL"] },
+      { href: "/dashboard/minha-loja", label: "Minha Loja", icon: "ShoppingBag", roles: ["SELLER"], accesses: ["MARKET_SELLER"] },
     ],
   },
   {
@@ -125,60 +128,8 @@ export const navSections: DashboardNavSection[] = [
   {
     label: "Conta",
     items: [
-      { href: "/dashboard/perfil", label: "Perfil", icon: "User" },
-      { href: "/dashboard/assinatura", label: "Planos", icon: "CreditCard" },
-      { href: "/dashboard/pagamentos", label: "Pagamentos", icon: "WalletCards" },
-      { href: "/dashboard/configuracoes", label: "Configurações", icon: "Settings" },
-      { href: "/dashboard/seguranca", label: "Segurança", icon: "Shield" },
+      { href: "/dashboard/perfil", label: "A minha conta", icon: "User" },
+      { href: "/dashboard/assinatura", label: "Plano e pagamentos", icon: "CreditCard" },
     ],
   },
-];
-
-export const products = [
-  { id: "whey", name: "Whey Protein Concentrado", category: "Suplementos", detail: "900g • Noogym", price: "19.900 Kz", rating: "4,8", reviews: 342, image: "/images/products/noogym-market/whey-concentrado-noogym.png", discount: "-15%" },
-  { id: "creatina", name: "Creatina Monohidratada", category: "Suplementos", detail: "300g • Noogym", price: "9.900 Kz", rating: "4,9", reviews: 276, image: "/images/products/noogym-market/creatina-monohidratada-noogym.png" },
-  { id: "shaker", name: "Coqueteleira Noogym", category: "Acessórios", detail: "600ml • Livre de BPA", price: "4.500 Kz", rating: "4,7", reviews: 189, image: "/images/products/noogym-market/coqueteleira-noogym.png" },
-  { id: "belt", name: "Cinto de Musculação", category: "Acessórios", detail: "Tamanho único", price: "7.500 Kz", rating: "4,6", reviews: 142, image: "/images/products/noogym-market/cinto-musculacao-noogym.png" },
-  { id: "omega", name: "Ômega 3 1000mg", category: "Suplementos", detail: "120 cápsulas • Noogym", price: "8.900 Kz", rating: "4,8", reviews: 213, image: "/images/dashboard/omega-3.png" },
-  { id: "pre", name: "Pré-treino Hardcore", category: "Suplementos", detail: "300g • Noogym", price: "8.900 Kz", rating: "4,8", reviews: 158, image: "/images/products/noogym-market/pre-treino-explosive-noogym.png" },
-  { id: "zma", name: "ZMA Noogym", category: "Suplementos", detail: "90 cápsulas", price: "6.900 Kz", rating: "4,7", reviews: 96, image: "/images/dashboard/zma-noogym.png" },
-  { id: "bag", name: "Mochila Noogym", category: "Acessórios", detail: "Capacidade 30L", price: "17.900 Kz", rating: "4,9", reviews: 118, image: "/images/dashboard/mochila-noogym.png" },
-  { id: "straps", name: "Straps de Levantamento", category: "Acessórios", detail: "Par • Alta resistência", price: "4.900 Kz", rating: "4,6", reviews: 85, image: "/images/dashboard/straps-noogym.png" },
-  { id: "bar", name: "NooBar Protein Bar", category: "Alimentação", detail: "Sabor chocolate • 60g", price: "1.900 Kz", rating: "4,5", reviews: 202, image: "/images/dashboard/noobar.png" },
-];
-
-export const workouts = [
-  { name: "Upper Body", group: "Peito, Ombro, Tríceps", date: "20 Mai, 19:30", duration: "60 min", kcal: "620 kcal", status: "Concluído", image: "/images/dashboard/workout-upper.png" },
-  { name: "Lower Body", group: "Pernas, Glúteos, Panturrilhas", date: "22 Mai, 18:00", duration: "55 min", kcal: "580 kcal", status: "Continuar", image: "/images/dashboard/workout-lower.png" },
-  { name: "Back Day", group: "Costas, Bíceps", date: "24 Mai, 17:00", duration: "50 min", kcal: "480 kcal", status: "Iniciar", image: "/images/dashboard/workout-back.png" },
-  { name: "Core Workout", group: "Abdômen, Lombar", date: "25 Mai, 10:00", duration: "30 min", kcal: "280 kcal", status: "Iniciar", image: "/images/dashboard/workout-core.png" },
-];
-
-export const orders = [
-  { id: "#NMG-98432", date: "22 Mai 2024", status: "Entregue", detail: "Entregue em 24 Mai 2024", items: "2 itens", total: "24.400 Kz", color: "text-limebrand", images: [products[0].image, products[2].image] },
-  { id: "#NMG-98115", date: "15 Mai 2024", status: "Em trânsito", detail: "Previsão de entrega 20 Mai 2024", items: "2 itens", total: "12.400 Kz", color: "text-sky-400", images: [products[1].image, products[3].image] },
-  { id: "#NMG-97670", date: "05 Mai 2024", status: "Processando", detail: "Pagamento aprovado", items: "2 itens", total: "8.900 Kz", color: "text-yellow-300", images: [products[2].image, products[7].image] },
-  { id: "#NMG-97211", date: "28 Abr 2024", status: "Enviado", detail: "Enviado em 29 Abr 2024", items: "1 item", total: "8.900 Kz", color: "text-purple-400", images: [products[4].image] },
-  { id: "#NMG-96321", date: "10 Abr 2024", status: "Cancelado", detail: "Cancelado em 11 Abr 2024", items: "1 item", total: "19.900 Kz", color: "text-red-400", images: [products[0].image] },
-];
-
-export const coupons = [
-  { code: "NOO20", tag: "20% OFF", title: "20% de desconto em suplementos", details: "Válido em todos os suplementos da categoria.", expires: "31 Mai 2024", min: "Mín. 10.000 Kz" },
-  { code: "FRETEGRATIS", tag: "FRETE GRÁTIS", title: "Frete grátis", details: "Válido para qualquer compra acima de 15.000 Kz.", expires: "25 Mai 2024", min: "Sem valor mínimo" },
-  { code: "NOO15", tag: "15% OFF", title: "15% de desconto em acessórios", details: "Válido em acessórios e equipamentos.", expires: "15 Jun 2024", min: "Mín. 8.000 Kz" },
-  { code: "WELCOME", tag: "EXCLUSIVO", title: "Boas-vindas ao Noogym", details: "Desconto especial para novos membros.", expires: "30 Jun 2024", min: "Sem valor mínimo", used: true },
-];
-
-export const gyms = [
-  { name: "Academia X", area: "Talatona, Luanda", distance: "1,2 km", visits: 24, plan: "Premium", image: "/images/gyms/noogym-network/noogym-center.png" },
-  { name: "Noogym Center", area: "Kilamba, Luanda", distance: "3,8 km", visits: 18, plan: "Premium", image: "/images/gyms/noogym-network/iron-house-fitness.png" },
-  { name: "Power Fit", area: "Centro, Benguela", distance: "Visitada recentemente", visits: 6, plan: "Standard", image: "/images/gyms/noogym-network/elite-training.png" },
-  { name: "Move Fitness", area: "Namibe, Angola", distance: "Favorita", visits: 4, plan: "Basic", image: "/images/gyms/noogym-network/move-fitness.png" },
-];
-
-export const activity = [
-  ["Check-in realizado", "Academia X • Hoje, 08:15"],
-  ["Treino concluído", "Treino Upper Body • Ontem, 19:45"],
-  ["Meta diária alcançada", "Parabéns! Você atingiu sua meta de calorias"],
-  ["Plano atualizado", "Premium renovado com sucesso"],
 ];

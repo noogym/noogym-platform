@@ -24,13 +24,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const payload = await response.json().catch(() => null);
+  const envelope = await response.json().catch(() => null);
+  const payload = envelope?.success === true && "data" in envelope ? envelope.data : envelope;
 
-  if (response.ok && payload?.token && payload?.expiresIn) {
-    await setSessionToken(payload.token, payload.expiresIn);
+  const token = payload?.accessToken ?? payload?.token;
+  if (response.ok && token) {
+    await setSessionToken(token, 60 * 60 * 24);
   }
 
-  return Response.json(payload ?? {}, {
+  return Response.json(response.ok && payload?.user ? { user: payload.user } : payload ?? {}, {
     status: response.status,
     statusText: response.statusText,
   });

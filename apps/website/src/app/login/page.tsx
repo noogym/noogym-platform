@@ -1,25 +1,24 @@
 import type { Metadata } from "next";
-import { CalendarDays, Dumbbell, MapPin, ShoppingBag } from "lucide-react";
+import { Building2, Dumbbell, ShieldCheck } from "lucide-react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
   title: "Login",
-  description: "Entre na sua conta e acesse o ecossistema Noogym.",
+  description: "Entra na tua conta Noogym e continua a tua jornada.",
 };
 
 const features = [
-  { icon: MapPin, title: "Site e app", text: "Explore ginásios, planos, eventos, benefícios e acompanhe sua rotina." },
-  { icon: Dumbbell, title: "Treino e nutrição", text: "Use a mesma conta para programas, evolução e serviços de acompanhamento." },
-  { icon: CalendarDays, title: "ERP e equipa", text: "Acessos de ginásio são liberados por vínculo e permissão aprovada." },
-  { icon: ShoppingBag, title: "Noogym Market", text: "Compras e operação de vendedor usam a mesma identidade com acessos separados." },
+  { icon: ShieldCheck, title: "Acesso protegido", text: "Entra com o e-mail e a palavra-passe da tua conta." },
+  { icon: Dumbbell, title: "A tua jornada", text: "Consulta as ferramentas e os serviços associados ao teu perfil." },
+  { icon: Building2, title: "Acessos profissionais", text: "As permissões de ginásios e empresas são validadas à parte." },
 ];
 
 export default function LoginPage() {
   return (
     <AuthLayout
-      heroTitle={<>Volte ao <span className="text-limebrand">Noogym</span> e continue sua evolução.</>}
-      heroText={<>A sua conta conecta site, app mobile, ERP dos ginásios, marketplace e painéis profissionais. O que muda são os acessos liberados para cada perfil.</>}
+      heroTitle={<>A tua jornada continua no <span className="text-limebrand">Noogym.</span></>}
+      heroText="Entra na tua conta para continuares de onde ficaste. Os acessos profissionais dependem do perfil associado."
       features={features}
     >
       <LoginForm />

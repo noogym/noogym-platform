@@ -287,6 +287,8 @@ model User {
   passwordResetTokenExpiresAt DateTime?
   role                        UserRole      @default(ADMIN)
   status                      UserStatus    @default(ACTIVE)
+  termsAcceptedAt             DateTime?
+  privacyPolicyAcceptedAt     DateTime?
   avatarUrl                   String?
   lastLoginAt                 DateTime?
   createdAt                   DateTime      @default(now())

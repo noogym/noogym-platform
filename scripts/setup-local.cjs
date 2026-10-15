@@ -8,9 +8,25 @@ const composeFiles = ["-f", "docker-compose.yml", "-f", "docker-compose.local.ym
 
 const localFiles = [
   {
+    path: join(root, "apps", "leads-api", ".env"),
+    content: [
+      'DATABASE_URL="postgresql://noogym:noogym_password@localhost:5433/noogym_leads?schema=public"',
+      "PORT=3333",
+      "",
+    ].join("\n"),
+  },
+  {
+    path: join(root, "apps", "intelligence-api", ".env"),
+    content: [
+      'DATABASE_URL="postgresql://noogym:noogym_password@localhost:5433/noogym_intelligence?schema=public"',
+      "PORT=3340",
+      "",
+    ].join("\n"),
+  },
+  {
     path: join(root, "apps", "api", ".env"),
     content: [
-      'DATABASE_URL="postgresql://noogym:noogym_password@localhost:5432/noogymsoftware?schema=public"',
+      'DATABASE_URL="postgresql://noogym:noogym_password@localhost:5433/noogymsoftware?schema=public"',
       'AUTH_PROVIDER="local"',
       'JWT_SECRET="change-this-local-jwt-secret-with-at-least-32-chars"',
       'JWT_EXPIRES_IN="1d"',
@@ -103,7 +119,7 @@ function waitForPostgres() {
     ]);
 
     if (result.ok && result.text.includes("accepting connections")) {
-      log("PostgreSQL pronto em localhost:5432");
+      log("PostgreSQL pronto em localhost:5433");
       return;
     }
 
@@ -112,6 +128,44 @@ function waitForPostgres() {
   }
 
   throw new Error("PostgreSQL nao ficou pronto dentro do tempo esperado.");
+}
+
+function ensureDatabase(name) {
+  const exists = output("docker", [
+    "compose",
+    ...composeFiles,
+    "exec",
+    "-T",
+    "postgres",
+    "psql",
+    "-U",
+    "noogym",
+    "-d",
+    "noogymsoftware",
+    "-tAc",
+    `SELECT 1 FROM pg_database WHERE datname = '${name}';`,
+  ]);
+
+  if (!exists.ok) {
+    throw new Error(`Could not check whether database ${name} exists: ${exists.text}`);
+  }
+
+  if (exists.text === "1") return;
+
+  run("docker", [
+    "compose",
+    ...composeFiles,
+    "exec",
+    "-T",
+    "postgres",
+    "createdb",
+    "-U",
+    "noogym",
+    "-O",
+    "noogym",
+    name,
+  ]);
+  log(`database ${name} criada`);
 }
 
 function assertNoBlockingDevProcesses() {
@@ -212,13 +266,21 @@ async function main() {
   log("aguardando PostgreSQL");
   waitForPostgres();
 
+  log("preparando databases das APIs auxiliares");
+  ensureDatabase("noogym_leads");
+  ensureDatabase("noogym_intelligence");
+
   assertNoBlockingDevProcesses();
 
   log("gerando Prisma Client");
   run("pnpm", ["--filter", apiPackage, "prisma:generate"]);
+  run("pnpm", ["--filter", "@noogym/leads-api", "prisma:generate"]);
+  run("pnpm", ["--filter", "@noogym/intelligence-api", "prisma:generate"]);
 
   log("aplicando migrations");
   run("pnpm", ["--filter", apiPackage, "exec", "prisma", "migrate", "deploy"]);
+  run("pnpm", ["--filter", "@noogym/leads-api", "exec", "prisma", "migrate", "deploy"]);
+  run("pnpm", ["--filter", "@noogym/intelligence-api", "exec", "prisma", "migrate", "deploy"]);
 
   if (process.env.NOOGYM_SETUP_SEED === "false") {
     log("seed ignorado por NOOGYM_SETUP_SEED=false");

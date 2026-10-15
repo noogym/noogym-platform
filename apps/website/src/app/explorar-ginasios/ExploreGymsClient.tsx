@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BadgeCheck, ExternalLink, Grid2X2, LayoutList, Loader2, MapPin, Navigation, Star, Table2, X } from "lucide-react";
+import { BadgeCheck, ExternalLink, Heart, LayoutList, Loader2, Map, MapPin, Navigation, Search, Star, Table2, X } from "lucide-react";
 import { gyms, type Gym } from "@/data/gyms";
 import { GymCard } from "@/components/gyms/GymCard";
 import { defaultGymFilters, GymFilters, type GymFiltersState, type GymSortOption, type PriceRangeFilter } from "@/components/gyms/GymFilters";
@@ -88,6 +88,7 @@ function matchesPrice(gym: Gym, priceRange: PriceRangeFilter) {
 
 function matchesLocation(gym: Gym, location: string) {
   if (location === "Luanda, Angola") return true;
+  if (location === "A minha localização") return true;
   return normalizeText(gym.location).includes(normalizeText(location));
 }
 
@@ -104,7 +105,16 @@ function matchesSource(gym: Gym, source: GymFiltersState["source"]) {
   return gym.isPartner === false;
 }
 
-function filterGyms(query: string, filters: GymFiltersState, sourceGyms: Gym[], favoriteSlugs: string[]) {
+function distanceBetween(center: MapSearchCenter, gym: Gym) {
+  if (typeof gym.latitude !== "number" || typeof gym.longitude !== "number") return null;
+  const radians = (degrees: number) => degrees * (Math.PI / 180);
+  const latitudeDelta = radians(gym.latitude - center.lat);
+  const longitudeDelta = radians(gym.longitude - center.lng);
+  const arc = Math.sin(latitudeDelta / 2) ** 2 + Math.cos(radians(center.lat)) * Math.cos(radians(gym.latitude)) * Math.sin(longitudeDelta / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(arc), Math.sqrt(1 - arc));
+}
+
+function filterGyms(query: string, filters: GymFiltersState, sourceGyms: Gym[], favoriteSlugs: string[], userLocation?: MapSearchCenter | null) {
   const normalizedQuery = normalizeText(query.trim());
   const favorites = new Set(favoriteSlugs);
 
@@ -114,8 +124,9 @@ function filterGyms(query: string, filters: GymFiltersState, sourceGyms: Gym[], 
 
     return (
       queryOk &&
-      matchesLocation(gym, filters.location) &&
-      gymDistance(gym) <= filters.radius &&
+      (filters.location === "A minha localização" && userLocation
+        ? (distanceBetween(userLocation, gym) ?? Number.MAX_SAFE_INTEGER) <= filters.radius
+        : matchesLocation(gym, filters.location) && gymDistance(gym) <= filters.radius) &&
       matchesType(gym, filters.type) &&
       matchesPrice(gym, filters.priceRange) &&
       matchesResources(gym, filters.resources) &&
@@ -325,7 +336,7 @@ async function fetchDiscoveredLuandaGyms(signal?: AbortSignal) {
   return (await response.json()) as GoogleNearbyGymResponse;
 }
 
-export function ExploreGymsClient() {
+export function ExploreGymsClient({ embedded = false }: { embedded?: boolean }) {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<GymFiltersState>(defaultGymFilters);
   const [sort, setSort] = useState<GymSortOption>("Recomendados");
@@ -337,13 +348,17 @@ export function ExploreGymsClient() {
   const [selectedSlug, setSelectedSlug] = useState(gyms[0]?.slug ?? "");
   const [currentPage, setCurrentPage] = useState(1);
   const [favoriteSlugs, setFavoriteSlugs] = useState<string[]>([]);
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false);
   const [compareSlugs, setCompareSlugs] = useState<string[]>([]);
   const [quickViewGym, setQuickViewGym] = useState<Gym | null>(null);
   const [mobileView, setMobileView] = useState<"lista" | "mapa">("lista");
   const [listView, setListView] = useState<GymListView>("compacto");
+  const [expandedGymSlug, setExpandedGymSlug] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<MapSearchCenter | null>(null);
+  const [locationRequest, setLocationRequest] = useState<"idle" | "loading" | "error">("idle");
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const allGyms = useMemo(() => mergeGyms(gyms, googleGyms, mapGyms), [googleGyms, mapGyms]);
-  const filtered = useMemo(() => sortGyms(filterGyms(query, filters, allGyms, favoriteSlugs), sort), [allGyms, favoriteSlugs, filters, query, sort]);
+  const filtered = useMemo(() => sortGyms(filterGyms(query, filters, allGyms, favoriteSlugs, userLocation), sort), [allGyms, favoriteSlugs, filters, query, sort, userLocation]);
   const pageSize = listView === "cards" ? 6 : listView === "tabela" ? 15 : 12;
   const totalPages = Math.max(Math.ceil(filtered.length / pageSize), 1);
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -386,7 +401,9 @@ export function ExploreGymsClient() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const coordinates = locationCoordinates[filters.location] ?? locationCoordinates["Luanda, Angola"];
+    const coordinates = filters.location === "A minha localização" && userLocation
+      ? userLocation
+      : locationCoordinates[filters.location] ?? locationCoordinates["Luanda, Angola"];
 
     async function loadGoogleGyms() {
       setGoogleStatus("loading");
@@ -397,7 +414,7 @@ export function ExploreGymsClient() {
           fetchDiscoveredLuandaGyms(controller.signal),
         ]);
         const payload = nearbyPayload.status === "fulfilled" ? nearbyPayload.value : null;
-        const discoveredItems = discoveredPayload.status === "fulfilled" ? discoveredPayload.value.items : [];
+        const discoveredItems = filters.location === "A minha localização" ? [] : discoveredPayload.status === "fulfilled" ? discoveredPayload.value.items : [];
 
         if (!payload && discoveredPayload.status !== "fulfilled") {
           throw new Error("Failed to load Google gyms.");
@@ -424,7 +441,7 @@ export function ExploreGymsClient() {
     void loadGoogleGyms();
 
     return () => controller.abort();
-  }, [filters.location, filters.radius]);
+  }, [filters.location, filters.radius, userLocation]);
 
   useEffect(() => {
     if (!filtered.length) return;
@@ -444,7 +461,10 @@ export function ExploreGymsClient() {
 
   useEffect(() => {
     const stored = window.localStorage.getItem("noogym.favoriteGyms");
-    if (!stored) return;
+    if (!stored) {
+      setFavoritesLoaded(true);
+      return;
+    }
 
     try {
       const parsed = JSON.parse(stored);
@@ -454,11 +474,13 @@ export function ExploreGymsClient() {
     } catch {
       setFavoriteSlugs([]);
     }
+    setFavoritesLoaded(true);
   }, []);
 
   useEffect(() => {
+    if (!favoritesLoaded) return;
     window.localStorage.setItem("noogym.favoriteGyms", JSON.stringify(favoriteSlugs));
-  }, [favoriteSlugs]);
+  }, [favoriteSlugs, favoritesLoaded]);
 
   useEffect(() => {
     const selectedCard = cardRefs.current[selectedSlug];
@@ -548,6 +570,75 @@ export function ExploreGymsClient() {
     setQuery("");
     setFilters(defaultGymFilters);
     setSort("Recomendados");
+  }
+
+  function requestCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationRequest("error");
+      return;
+    }
+    setLocationRequest("loading");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const center = { lat: coords.latitude, lng: coords.longitude };
+        setUserLocation(center);
+        setFilters((current) => ({ ...current, location: "A minha localização", favoritesOnly: false, source: "Todos" }));
+        setLocationRequest("idle");
+      },
+      () => setLocationRequest("error"),
+      { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 },
+    );
+  }
+
+  if (embedded) {
+    const modes = [
+      { label: "Todos", selected: !filters.favoritesOnly && filters.source === "Todos", update: { favoritesOnly: false, source: "Todos" as const } },
+      { label: "Parceiros Noogym", selected: !filters.favoritesOnly && filters.source === "Parceiros Noogym", update: { favoritesOnly: false, source: "Parceiros Noogym" as const } },
+      { label: "Guardados", selected: filters.favoritesOnly, update: { favoritesOnly: !filters.favoritesOnly, source: "Todos" as const } },
+    ];
+    return (
+      <section className="space-y-5">
+        <label className="relative block">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/42" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Pesquisar por nome ou zona" className="h-12 w-full rounded-lg border border-white/12 bg-white/[0.025] pl-12 pr-4 text-sm outline-none transition placeholder:text-white/40 focus:border-limebrand/60" />
+        </label>
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <select aria-label="Escolher zona" value={filters.location} onChange={(event) => setFilters((current) => ({ ...current, location: event.target.value, favoritesOnly: false }))} className="h-11 min-w-0 rounded-md border border-white/12 bg-[#091112] px-3 text-sm text-white/80 outline-none focus:border-limebrand/60">
+            {userLocation ? <option value="A minha localização">A minha localização</option> : null}
+            {Object.keys(locationCoordinates).map((location) => <option key={location} value={location}>{location}</option>)}
+          </select>
+          <button type="button" onClick={requestCurrentLocation} disabled={locationRequest === "loading"} className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/12 px-4 text-sm font-semibold text-white/72 hover:border-limebrand/50 hover:text-limebrand disabled:opacity-50"><Navigation className="h-4 w-4" />{locationRequest === "loading" ? "A localizar…" : "Usar a minha localização"}</button>
+        </div>
+        {locationRequest === "error" ? <p role="status" className="text-xs text-amber-200/80">Não foi possível obter a localização. Podes escolher uma zona manualmente.</p> : null}
+        <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar ginásios">
+          {modes.map((mode) => <button key={mode.label} type="button" onClick={() => setFilters((current) => ({ ...current, ...mode.update }))} className={cn("shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition", mode.selected ? "border-limebrand bg-limebrand text-black" : "border-white/12 bg-white/[0.025] text-white/70 hover:border-limebrand/55")}>{mode.label}</button>)}
+          <span className="ml-auto inline-flex shrink-0 rounded-md border border-white/10 p-1" role="group" aria-label="Modo de visualização">
+          {([{ id: "lista", label: "Lista", Icon: LayoutList }, { id: "mapa", label: "Mapa", Icon: Map }] as const).map(({ id, label, Icon }) => <button key={id} type="button" onClick={() => setMobileView(id)} aria-pressed={mobileView === id} className={cn("inline-flex h-8 items-center gap-1.5 rounded px-2.5 text-xs font-bold", mobileView === id ? "bg-limebrand text-black" : "text-white/58 hover:text-white")}><Icon className="h-3.5 w-3.5" />{label}</button>)}
+          </span>
+        </div>
+        {googleStatus === "loading" ? <p className="inline-flex items-center gap-2 text-xs text-white/48"><Loader2 className="h-4 w-4 animate-spin" />A procurar ginásios nesta zona</p> : null}
+        {googleStatus === "unconfigured" || googleStatus === "error" ? <p className="rounded-md border border-white/8 bg-white/[0.02] px-3 py-2 text-xs text-white/52">{googleStatus === "unconfigured" ? "A mostrar os ginásios parceiros disponíveis." : "Não foi possível actualizar os ginásios próximos. A mostrar os parceiros disponíveis."}</p> : null}
+        <p className="text-xs text-white/42">Os ginásios guardados ficam neste dispositivo.</p>
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <p className="text-sm text-white/58">{filtered.length} {filtered.length === 1 ? "ginásio encontrado" : "ginásios encontrados"}</p>
+          {query || filters.favoritesOnly || filters.source !== "Todos" ? <button type="button" onClick={resetDiscovery} className="text-sm font-semibold text-limebrand">Limpar</button> : null}
+        </div>
+        {mobileView === "mapa" ? <GymMap compact gyms={filtered} onGooglePlaceSelect={selectGoogleMapPlace} onSearchArea={searchMapArea} onSelectGym={selectGym} searchAreaLoading={areaSearchStatus === "loading"} selectedGym={selected} statusMessage={mapStatusMessage} /> : visibleGyms.length ? <div className="grid gap-3 md:grid-cols-2">{visibleGyms.map((gym) => (
+          <article key={gym.slug} className="rounded-xl border border-white/10 bg-white/[0.025] p-4 transition hover:border-limebrand/35">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h2 className="font-bold">{gym.name}</h2>{gym.isPartner !== false ? <span className="inline-flex items-center gap-1 rounded-full bg-limebrand/10 px-2 py-1 text-[10px] font-bold text-limebrand"><BadgeCheck className="h-3 w-3" />Parceiro</span> : null}</div>
+                <p className="mt-2 flex items-start gap-2 text-sm text-white/58"><MapPin className="mt-0.5 h-4 w-4 shrink-0" />{gym.location}{filters.location === "A minha localização" && userLocation ? ` · ${distanceBetween(userLocation, gym)?.toFixed(1) ?? "—"} km` : gym.distance !== "Maps" ? ` · ${gym.distance}` : ""}</p>
+                {(gym.source === "google" || gym.source === "noogym") && gym.rating > 0 ? <p className="mt-2 flex items-center gap-1 text-xs text-white/55"><Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />{gym.rating} <span>({gym.reviews})</span></p> : null}
+              </div>
+              <button type="button" onClick={() => toggleFavorite(gym)} aria-label={favoriteSlugs.includes(gym.slug) ? "Remover ginásio dos guardados" : "Guardar ginásio"} className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 text-white/55 hover:border-limebrand/50 hover:text-limebrand", favoriteSlugs.includes(gym.slug) && "border-limebrand/40 text-limebrand")}><Heart className={cn("h-4 w-4", favoriteSlugs.includes(gym.slug) && "fill-current")} /></button>
+            </div>
+            <div className="mt-4 flex gap-2"><button type="button" onClick={() => setExpandedGymSlug((current) => current === gym.slug ? null : gym.slug)} className="h-9 rounded-md border border-white/12 px-3 text-xs font-bold text-white/75 hover:border-white/25">{expandedGymSlug === gym.slug ? "Fechar detalhes" : "Ver detalhes"}</button><a href={directionsUrl(gym)} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-md bg-limebrand px-3 text-xs font-black text-black"><Navigation className="h-3.5 w-3.5" />Rotas</a></div>
+            {expandedGymSlug === gym.slug ? <div className="mt-4 border-t border-white/10 pt-3"><p className="text-xs leading-5 text-white/55">{gym.address || gym.location}</p>{gym.features.length ? <p className="mt-2 text-xs leading-5 text-white/55">{gym.features.slice(0, 4).join(" · ")}</p> : null}<p className="mt-2 text-[11px] font-semibold text-limebrand">{gym.isPartner === false ? "Informação do Google Maps" : "Ginásio parceiro Noogym"}</p></div> : null}
+          </article>
+        ))}</div> : <div className="rounded-xl border border-dashed border-white/15 p-10 text-center"><MapPin className="mx-auto h-7 w-7 text-limebrand" /><h2 className="mt-3 font-bold">Não encontrámos ginásios</h2><p className="mt-1 text-sm text-white/55">Tenta pesquisar outro nome ou zona.</p><button type="button" onClick={resetDiscovery} className="mt-4 text-sm font-bold text-limebrand">Limpar pesquisa e filtros</button></div>}
+        {mobileView === "lista" && filtered.length > visibleGyms.length ? <button type="button" onClick={() => setCurrentPage((page) => page + 1)} className="h-10 w-full rounded-md border border-white/12 text-sm font-bold text-white/75 hover:border-limebrand/45">Ver mais ginásios</button> : null}
+      </section>
+    );
   }
 
   return (
