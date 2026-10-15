@@ -433,7 +433,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\Workspace\\noogym-platform\\apps\\intelligence-api\\src\\generated\\prisma",
+      "value": "/Users/macbookpro/Documents/workspace/noogym-platform/apps/intelligence-api/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -442,12 +442,12 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "windows",
+        "value": "darwin",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\Workspace\\noogym-platform\\apps\\intelligence-api\\prisma\\schema.prisma",
+    "sourceFilePath": "/Users/macbookpro/Documents/workspace/noogym-platform/apps/intelligence-api/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

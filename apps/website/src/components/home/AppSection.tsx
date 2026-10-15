@@ -36,9 +36,9 @@ export function AppSection() {
             eventParams={{ cta_name: "conhecer_app", section: "app" }}
             className="mt-7 inline-flex min-h-11 items-center gap-2 rounded-md bg-limebrand px-5 text-sm font-bold text-black transition hover:bg-limebrand2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-limebrand"
           >
-            Conhecer o App <ArrowRight className="h-4 w-4" />
+            Criar conta <ArrowRight className="h-4 w-4" />
           </TrackedLink>
-          <p className="mt-3 text-xs leading-5 text-white/48">A app móvel está em preparação. A imagem é uma demonstração visual, não uma captura da app publicada.</p>
+          <p className="mt-3 text-xs leading-5 text-white/48">O download do app móvel estará disponível em breve. A imagem é uma demonstração visual, não uma captura da app publicada.</p>
         </div>
 
         <div className="relative">

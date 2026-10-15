@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { ArrowRight, Heart, Sparkles, Trophy, Zap } from "lucide-react";
+import { ArrowDownToLine, ArrowRight, Heart, Sparkles, Trophy, Zap } from "lucide-react";
 import { TrackedLink } from "@/components/analytics/TrackedLink";
 
 const benefits = [
@@ -37,12 +37,12 @@ export function HeroSection() {
           </p>
           <div className="mt-8 flex flex-col gap-3 min-[430px]:flex-row">
             <TrackedLink
-              href="/criar-conta"
+              href="#app"
               eventName="homepage_cta_click"
-              eventParams={{ cta_name: "conhecer_app", section: "hero" }}
+              eventParams={{ cta_name: "baixar_app", section: "hero" }}
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-limebrand px-6 text-sm font-bold text-black transition hover:bg-limebrand2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-limebrand focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             >
-              Conhecer o App <ArrowRight className="h-4 w-4" />
+              Baixar o app <ArrowDownToLine className="h-4 w-4" />
             </TrackedLink>
             <TrackedLink
               href="#empresas"
