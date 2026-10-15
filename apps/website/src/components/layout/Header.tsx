@@ -15,7 +15,7 @@ import { MobileMenu } from "./MobileMenu";
 const links = [
   { href: "/", label: "Início" },
   { href: "/#app", label: "O app" },
-  { href: "/#empresas", label: "Para empresas" },
+  { href: "/para-ginasios", label: "Para Ginásios" },
   { href: "/#sobre", label: "Sobre nós" },
   { href: "/blog", label: "Blog" },
   { href: "/eventos", label: "Eventos" },

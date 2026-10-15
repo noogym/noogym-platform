@@ -1,0 +1,25 @@
+name: noogym-intelligence-web
+
+services:
+  intelligence-web:
+    build:
+      context: ../..
+      dockerfile: apps/intelligence-web/Dockerfile
+    image: noogym-intelligence-web
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      INTELLIGENCE_API_URL: "${INTELLIGENCE_API_URL:-http://host.docker.internal:3340}"
+      INTELLIGENCE_API_KEY: "${INTELLIGENCE_API_KEY:-dev-intelligence-key}"
+    ports:
+      - "${WEB_PORT:-3003}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
