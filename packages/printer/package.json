@@ -18,7 +18,7 @@
     "print:test": "pnpm build && node scripts/print-test.cjs"
   },
   "devDependencies": {
-    "@types/node": "^24.7.2",
-    "typescript": "^5.9.3"
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
   }
 }
