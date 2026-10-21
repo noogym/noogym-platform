@@ -731,7 +731,7 @@ export function CheckoutPageClient({ dashboard = false }: { dashboard?: boolean 
 
           <div className="border-t border-white/10 p-5 md:p-7">
             <CheckoutSectionTitle number={3} title="Revisão do pedido" />
-            {items.length ? <CheckoutReview /> : <EmptyCart />}
+            {items.length ? <CheckoutReview /> : <EmptyCart marketplaceHref={marketplaceHref} />}
           </div>
         </SectionCard>
 

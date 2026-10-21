@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BadgeCheck, ExternalLink, Heart, LayoutList, Loader2, Map, MapPin, Navigation, Search, Star, Table2, X } from "lucide-react";
+import { BadgeCheck, ExternalLink, Grid2X2, Heart, LayoutList, Loader2, Map, MapPin, Navigation, Search, Star, Table2, X } from "lucide-react";
 import { gyms, type Gym } from "@/data/gyms";
 import { GymCard } from "@/components/gyms/GymCard";
 import { defaultGymFilters, GymFilters, type GymFiltersState, type GymSortOption, type PriceRangeFilter } from "@/components/gyms/GymFilters";
