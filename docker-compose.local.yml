@@ -39,15 +39,3 @@ services:
   marketing:
     ports:
       - "3002:3000"
-
-  intelligence-postgres:
-    ports:
-      - "5435:5432"
-
-  intelligence-api:
-    ports:
-      - "3340:3340"
-
-  intelligence-web:
-    ports:
-      - "3003:3000"
