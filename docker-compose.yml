@@ -219,16 +219,12 @@ services:
     depends_on:
       leads-api:
         condition: service_healthy
-      intelligence-api:
-        condition: service_healthy
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
       HOSTNAME: 0.0.0.0
       PORT: 3000
       API_INTERNAL_URL: http://leads-api:3333
-      INTELLIGENCE_API_URL: http://intelligence-api:3340
-      INTELLIGENCE_API_KEY: "${INTELLIGENCE_API_KEY:-dev-intelligence-key}"
       GOOGLE_MAPS_API_KEY: "${GOOGLE_MAPS_API_KEY:-}"
       NEXT_PUBLIC_API_URL: /api
       NEXT_PUBLIC_DEMO_MODE: "${NEXT_PUBLIC_DEMO_MODE:-false}"
@@ -271,79 +267,7 @@ services:
       retries: 5
       start_period: 30s
 
-  intelligence-postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: noogym_intelligence
-      POSTGRES_USER: noogym
-      POSTGRES_PASSWORD: "${INTELLIGENCE_POSTGRES_PASSWORD:-noogym_password}"
-    volumes:
-      - noogym_intelligence_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U noogym -d noogym_intelligence"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-
-  intelligence-api:
-    build:
-      context: .
-      dockerfile: apps/intelligence-api/Dockerfile
-    image: noogym-intelligence-api
-    restart: unless-stopped
-    depends_on:
-      intelligence-postgres:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      PORT: 3340
-      DATABASE_URL: "postgresql://noogym:${INTELLIGENCE_POSTGRES_PASSWORD:-noogym_password}@intelligence-postgres:5432/noogym_intelligence?schema=public"
-      WEB_ORIGIN: "${INTELLIGENCE_WEB_ORIGIN:-http://localhost:3003}"
-      INTELLIGENCE_API_KEY: "${INTELLIGENCE_API_KEY:-dev-intelligence-key}"
-      INTELLIGENCE_SUBMISSION_API_KEY: "${INTELLIGENCE_SUBMISSION_API_KEY:-dev-submission-key}"
-      NOOGYM_INTELLIGENCE_USER_AGENT: "${NOOGYM_INTELLIGENCE_USER_AGENT:-NoogymFitnessIntelligence/0.1 (+https://noogym.com)}"
-      CRAWLER_TIMEOUT_MS: "${CRAWLER_TIMEOUT_MS:-8000}"
-      CRAWLER_DELAY_MS: "${CRAWLER_DELAY_MS:-1500}"
-      AI_PROVIDER: "${AI_PROVIDER:-disabled}"
-      WEBSITE_PUBLISHING_URL: http://website:3000/api
-      WEBSITE_DATA_EXPORT_DIR: ../website/src/data/generated
-    expose:
-      - "3340"
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3340/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  intelligence-web:
-    build:
-      context: .
-      dockerfile: apps/intelligence-web/Dockerfile
-    image: noogym-intelligence-web
-    restart: unless-stopped
-    depends_on:
-      intelligence-api:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      HOSTNAME: 0.0.0.0
-      PORT: 3000
-      INTELLIGENCE_API_URL: http://intelligence-api:3340
-      INTELLIGENCE_API_KEY: "${INTELLIGENCE_API_KEY:-dev-intelligence-key}"
-    expose:
-      - "3000"
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
 volumes:
   noogym_postgres_data: null
   noogym_redis_data: null
   noogym_leads_postgres_data: null
-  noogym_intelligence_postgres_data: null
